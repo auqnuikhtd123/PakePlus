@@ -1,22 +1,955 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <link rel="stylesheet" href="styles.css" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus App</title>
-        <script type="module" src="/main.js" defer></script>
-    </head>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>搜索并复制表格内容 - 高亮版（绿色）</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f6f8;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h2 {
+            color: #333;
+            text-align: center;
+        }
+        #searchInput {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        #results {
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .result-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            background-color: #fff;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            cursor: pointer;
+        }
+        .result-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .result-row {
+            padding: 5px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .result-row span {
+            flex-grow: 1;
+            cursor: pointer;
+        }
+        .result-row span:hover {
+            background-color: #e9ecef;
+            border-radius: 3px;
+        }
+        .result-row strong {
+            color: #2c3e50;
+            min-width: 60px;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .copy-btn:hover {
+            background-color: #2980b9;
+        }
+        .copied {
+            background-color: #2ecc71;
+        }
+        .copied::after {
+            content: '已复制';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .highlight {
+            background-color: #c3e6cb; /* 改为绿色高亮 */
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>加征25%关税产品b1.1 by auqnuikhtd@gmail.com</h2>
+        <input type="text" id="searchInput" placeholder="输入关键词搜索 HS、品名、英文">
+        <div id="results"></div>
+    </div>
 
-    <body>
-        <main class="container">
-            <h1>Welcome to PakePlus</h1>
+    <script>
+        const tableData = [
+    {"A": "7307290090", "B": "气动快速接头", "C": "Quick Disconnect", "D": "不锈钢stainlesssteel气动快速接头是一种主要用于空气配管、气动工具的快速接头Pneumaticquickcouplingisaquickcouplingmainlyusedforairpipingandpneumatictools"},
+{"A": "7307290090", "B": "焊锡丝", "C": "Solder wire", "D": "锡Tin电子业、制造业、维修业等焊接Weldinginelectronics,manufacturing,maintenance,etc."},
+{"A": "7307290090", "B": "空调配件", "C": "Air conditioning accessories", "D": "不锈钢工具"},
+{"A": "7307290090", "B": "汽车油管接头", "C": "Car oil pipe joints", "D": "不锈钢Use for Car brake system/用于汽车刹车功能"},
+{"A": "7307290090", "B": "金属接头", "C": "metal joint", "D": "不锈钢/家用"},
+{"A": "7307290090", "B": "不锈钢管件", "C": "Stainless steel pipe fittings", "D": "不锈钢连接"},
+{"A": "7307995045", "B": "管件", "C": "pipe fitting", "D": "铁连接管子"},
+{"A": "7307995060", "B": "快接转换接头", "C": "quick connector", "D": "plastic+iron工具用 tool"},
+{"A": "7308909590", "B": "圆环", "C": "wedding arch", "D": "metalwedding arch stand"},
+{"A": "7310290065", "B": "铁罐", "C": "can", "D": "马口铁的/灌蜡"},
+{"A": "7312100500", "B": "晾衣绳", "C": "Clothesline", "D": "不锈钢置物"},
+{"A": "7312101070", "B": "不锈钢线", "C": "stainless steel wire", "D": "不锈钢烧烤"},
+{"A": "7312101070", "B": "不锈钢线", "C": "stainless steel wire", "D": "不锈钢烧烤"},
+{"A": "7312102000", "B": "铁丝", "C": "Iron Wire", "D": "铁丝维修线"},
+{"A": "7314315080", "B": "铁网片", "C": "iron mesh", "D": "贱金属家用"},
+{"A": "7314493000", "B": "纱网", "C": "Gauze net", "D": "铁丝家用"},
+{"A": "7314496000", "B": "安全网", "C": "safety mesh", "D": "铁制品家用"},
+{"A": "7314496000", "B": "防鸟网", "C": "Bird Net", "D": "铁家用"},
+{"A": "7315110005", "B": "摩托车链条", "C": "motorcycle Chain link", "D": "铁/链接作用"},
+{"A": "7315110005", "B": "汽车正时链条", "C": "Engine Timing Chain", "D": "塑料汽车正时链条"},
+{"A": "7315110060", "B": "链条", "C": "Chain link", "D": "不锈钢/起到称重与连接的作用"},
+{"A": "7315190000", "B": "链条调节器", "C": "Chain regulator", "D": "铝/调节链条"},
+{"A": "7315895000", "B": "铁链", "C": "Chain", "D": "合金alloy生活用品"},
+{"A": "7315900000", "B": "链扣", "C": "cufflinks", "D": "金属/用于连接链节"},
+{"A": "7316000000", "B": "船锚", "C": "Boat Achors", "D": "铝船"},
+{"A": "7317001000", "B": "大头钉", "C": "Tack", "D": "iron/铁Reinforcement and decoration of products/产品的加固和装饰"},
+{"A": "7317001000", "B": "图钉", "C": "drawing pin", "D": "金属装饰"},
+{"A": "7318130030", "B": "螺旋孔", "C": "screw eye", "D": "铁挂东西"},
+{"A": "7318145080", "B": "膨胀螺丝", "C": "Expansion screws", "D": "碳钢/家用"},
+{"A": "7318145080", "B": "圆形螺丝", "C": "Round Screws/Hexagon Screws/", "D": "plastic+stainless steel/plastic/copperScrews/Motorcycle Fork Guard Suspension Support/Brass Jet Nozzles"},
+{"A": "7318145080", "B": "卷钉", "C": "Roll nail", "D": "钢家用"},
+{"A": "7318145080", "B": "卷钉", "C": "Roll nail", "D": "钢家用"},
+{"A": "7318152010", "B": "U型螺栓", "C": "U-Bolt Boat Trailer", "D": "不锈钢Stainless steel拖船拖车紧固件/U-Bolt Boat Trailer"},
+{"A": "7318152065", "B": "M18螺栓", "C": "BOLT KIT", "D": "铁/汽车配件/autospareparts"},
+{"A": "7318152095", "B": "气缸盖螺丝组套", "C": "Head Stud Bolt Kit", "D": "金属螺丝"},
+{"A": "7318152095", "B": "不锈钢索栓", "C": "Stainless steel bolt", "D": "金属家用"},
+{"A": "7318155090", "B": "螺柱", "C": "head stud", "D": "iron铁用于汽车安装配件（use for car parts installation)"},
+{"A": "7318158082", "B": "汽车发动机螺丝", "C": "car engine screw", "D": "不锈钢（stainless steel）用于汽车发动机系统(use for car engine system)"},
+{"A": "7318158082", "B": "汽车发动机螺丝", "C": "car engine screw", "D": "不锈钢Use for car frame system/ 用于汽车框架功能"},
+{"A": "7318160045", "B": "螺丝", "C": "AUTO WHEEL NUTS", "D": "铁汽车用"},
+{"A": "7318160060", "B": "汽车配件", "C": "rivet nut", "D": "stainless steel（不锈钢）打磨抛光（sander polishing）"},
+{"A": "7318160085", "B": "螺母", "C": "WHEEL LUGS", "D": "铁+不锈钢Iron + stainless steel/固定用 The role is to connect the two workpieces toge"},
+{"A": "7318190000", "B": "直杆木螺丝", "C": "Straight wood screws", "D": "不锈钢/栏杆装饰"},
+{"A": "7318190000", "B": "平头卡帽", "C": "Flathead chuck", "D": "金属/Metal工具"},
+{"A": "7318220000", "B": "不锈钢垫片", "C": "stainless steel gasket", "D": "铁"},
+{"A": "7318240000", "B": "插销", "C": "Bolt", "D": "铁割草机零配件"},
+{"A": "7318290000", "B": "螺丝", "C": "screw", "D": "金属/工具"},
+{"A": "7318290000", "B": "货架安全销", "C": "Pallet Rack Safety Bolt", "D": "碳钢用于固定重型货架横梁"},
+{"A": "7319403000", "B": "不锈钢饰品针", "C": "Stainless Steel Pins", "D": "Stainless SteelUsed for individual jewelry making or other decorations"},
+{"A": "7319901000", "B": "缝纫针", "C": "Sewing needle", "D": "塑料缝制用品"},
+{"A": "7319909000", "B": "钩针", "C": "Crochet hook", "D": "不锈钢/生活用品"},
+{"A": "7320106060", "B": "板簧套件", "C": "Leaf Spring Kits", "D": "Metal/金属For Golf Cart Parts"},
+{"A": "7320201000", "B": "后螺旋弹簧", "C": "Rear Coil Spring", "D": "金属提高车子尾部，提高牵引重量"},
+{"A": "7320205060", "B": "双挂环加弹簧", "C": "hanging spring", "D": "Metal/金属/吊床配件"},
+{"A": "7320205060", "B": "弹簧", "C": "car engine spring", "D": "metal户外吊床配件"},
+{"A": "7320205060", "B": "挂环弹簧", "C": "hanging spring", "D": "不锈钢Stainless steel秋千配件swing accessories"},
+{"A": "7320905060", "B": "卷簧", "C": "Coil Spring", "D": "iron 铁brush cutter  parts 割草机配件"},
+{"A": "7321111030", "B": "野营灶", "C": "Camping stove", "D": "metal/金属/野营/camp"},
+{"A": "7321116000", "B": "燃气煮面炉", "C": "Gas Pasta Cooker", "D": "Stainless SteelPasta Cooking"},
+{"A": "7321190040", "B": "烧烤架", "C": "grill", "D": "不锈钢/烧烤"},
+{"A": "7321190040", "B": "烟熏器", "C": "Smoker", "D": "Zelkova/熏烟"},
+{"A": "7321190040", "B": "烤炉", "C": "Kebab Roaster", "D": "stainless steelBBQ"},
+{"A": "7321890050", "B": "柴火炉", "C": "Wood stove", "D": "外观：圆形材质构成：不锈钢烧烤做饭"},
+{"A": "7321890050", "B": "壁炉帘", "C": "Fireplace Screen", "D": "metalhome"},
+{"A": "7321890050", "B": "柴火炉", "C": "Wood stove", "D": "外观：圆形材质构成：不锈钢烧烤做饭"},
+{"A": "7321890050", "B": "壁炉帘", "C": "Fireplace Screen", "D": "metalhome"},
+{"A": "7321905000", "B": "炉头套件", "C": "fire burn pot, hot rod ignitor, auger motor and g", "D": "stainless steel烧烤使用"},
+{"A": "7321905000", "B": "旋钮", "C": "knob", "D": "（不锈钢）（煤气灶，控制旋钮）"},
+{"A": "7321905000", "B": "炉灶配件", "C": "Stove Accessories", "D": "ABS+Metal配件Accessories"},
+{"A": "7321906060", "B": "燃烧器", "C": "Grill Burner", "D": "METAL金属/For Grill 用于烤炉"},
+{"A": "7321906060", "B": "烤炉架", "C": "oven rack", "D": "305不锈钢用于烤箱"},
+{"A": "7321906060", "B": "片烤网", "C": "Grill net", "D": "不锈钢烧烤网"},
+{"A": "7321906090", "B": "缺氧保护装置", "C": "Hypoxia protection device", "D": "metal（金属）壁炉配件"},
+{"A": "7321906090", "B": "加热罩", "C": "Heating hood", "D": "不锈钢炊具"},
+{"A": "7322900015", "B": "空气加热器", "C": "air heater", "D": "金属Metal取暖 Heating"},
+{"A": "7323100000", "B": "清洁钢丝球", "C": "Cleaning wire ball", "D": "不锈钢/stainless steel清洁/cleaning sth"},
+{"A": "7323100000", "B": "金刚擦", "C": "Vajra wipe", "D": "海绵清洁"},
+{"A": "7323100000", "B": "环网", "C": "Ring network", "D": "不锈钢装饰"},
+{"A": "7323930015", "B": "咖啡手冲壶银色", "C": "Coffee pot silver", "D": "不锈钢stainless steel/喝咖啡用"},
+{"A": "7323930015", "B": "咖啡壶", "C": "coffeemaker", "D": "不锈钢/家用"},
+{"A": "7323930035", "B": "不锈钢蛋挞托", "C": "stainless steel tart mold 20 pcs", "D": "不锈钢stainless steel烘焙baking"},
+{"A": "7323930045", "B": "不锈钢厨房汤锅", "C": "Stainless steel kitchen pot", "D": "不锈钢/厨房汤锅"},
+{"A": "7323930045", "B": "烧水壶", "C": "Kettle", "D": "Stainless steel不锈钢USDE家用"},
+{"A": "7323930045", "B": "不锈钢锅", "C": "Stainless steel wok", "D": "不锈钢厨房用、餐桌用等"},
+{"A": "7323930045", "B": "不锈钢炒锅", "C": "Stainless steel wok", "D": "不锈钢厨房用、餐桌用等"},
+{"A": "7323930060", "B": "不锈钢杯", "C": "STAINLESS STEEL CUP", "D": "glass/household"},
+{"A": "7323930060", "B": "不锈钢器皿", "C": "Stainless Steel Ware", "D": "不锈钢/装水"},
+{"A": "7323930060", "B": "滤茶球", "C": "tea ball", "D": "不锈钢stainless steel/泡茶用"},
+{"A": "7323930060", "B": "马克杯", "C": "mug", "D": "不锈钢/装水"},
+{"A": "7323930060", "B": "冰桶", "C": "icecan", "D": "不锈钢Stainless steel家用 Homeware"},
+{"A": "7323930060", "B": "不锈钢器皿", "C": "Stainless Steel Ware", "D": "不锈钢/容器"},
+{"A": "7323930060", "B": "量勺", "C": "Measuring Spoon", "D": "不锈钢/烹饪量取"},
+{"A": "7323930060", "B": "咖啡杯", "C": "coffee cup", "D": "stainless steelDrinking"},
+{"A": "7323930060", "B": "咖啡拉花杯", "C": "latte coffee cup", "D": "不锈钢/咖啡拉花"},
+{"A": "7323930060", "B": "隔热垫", "C": "Diffuser", "D": "不锈钢/隔热"},
+{"A": "7323930060", "B": "冰霸杯", "C": "Ice bully cup", "D": "不锈钢/保温保冷"},
+{"A": "7323930060", "B": "面粉筛", "C": "Flour sieve", "D": "不锈钢过筛"},
+{"A": "7323930060", "B": "不锈钢厨房用品", "C": "Stainless steel kitchen supplies", "D": "Stainless steel/不锈钢for cooking/烹饪用"},
+{"A": "7323930060", "B": "不锈钢杯子", "C": "Stainless steel water bottles", "D": "不锈钢储物"},
+{"A": "7323930060", "B": "支架", "C": "rack", "D": "不锈钢蒸东西用的/cooking"},
+{"A": "7323930060", "B": "不锈钢漏", "C": "Stainless steel leakage", "D": "不锈钢过滤"},
+{"A": "7323930060", "B": "煎蛋器", "C": "omelet", "D": "不锈钢生活用品"},
+{"A": "7323930060", "B": "过滤器套装", "C": "Filter", "D": "stainless steel 不锈钢Home"},
+{"A": "7323930060", "B": "隔油网", "C": "Oil Cover", "D": "stainless steel 不锈钢Home"},
+{"A": "7323930060", "B": "茶具套装", "C": "tea set", "D": "不锈钢茶具"},
+{"A": "7323930060", "B": "蛋清分离器", "C": "egg separator", "D": "不锈钢egg separator/蛋清分离器"},
+{"A": "7323930060", "B": "折叠咖啡滴漏架", "C": "Folding coffee drip rack", "D": "不锈钢咖啡滴漏"},
+{"A": "7323930060", "B": "餐桌隔热垫", "C": "heat diffuser", "D": "铁厨房用"},
+{"A": "7323930060", "B": "餐具架", "C": "utensil holder", "D": "不锈钢餐具"},
+{"A": "7323930080", "B": "不锈钢宠物用品（不锈钢碗）", "C": "stainless steel bowl", "D": "不锈钢 Stainless steel宠物使用 PET use"},
+{"A": "7323930080", "B": "厨房置物架白色", "C": "Kitchen shelving white", "D": "不锈钢/厨房放物品用"},
+{"A": "7323930080", "B": "调酒器", "C": "Cocktail set", "D": "不锈钢+玻璃/Stainless steel + glass调酒用/Barware"},
+{"A": "7323930080", "B": "肥皂盒", "C": "Soap dish", "D": "stainless steelhome"},
+{"A": "7323930080", "B": "碗", "C": "bowl", "D": "不锈钢 塑料/宠物用品"},
+{"A": "7323930080", "B": "搅拌棒", "C": "Muddler", "D": "Stainless steel/搅拌用"},
+{"A": "7323930080", "B": "沥水架", "C": "dish drying rack", "D": "不锈钢+硅胶/清洁"},
+{"A": "7323930080", "B": "吸管套装", "C": "straw", "D": "不锈钢/厨房用"},
+{"A": "7323930080", "B": "铁夹子", "C": "Iron clamp", "D": "铁/工具"},
+{"A": "7323930080", "B": "痒痒挠", "C": "Tickling stick", "D": "Stainless steel/不锈钢Home decor/家居"},
+{"A": "7323930080", "B": "不锈钢桶", "C": "Stainless Bucket", "D": "外观：立式材质构成：不锈钢放冰块"},
+{"A": "7323930080", "B": "纸巾架", "C": "paper rack", "D": "不锈钢收纳"},
+{"A": "7323930080", "B": "支架", "C": "rack", "D": "不锈钢使用"},
+{"A": "7323930080", "B": "防油挡板", "C": "Oil baffle", "D": "Stainless steel/不锈钢for cooking/烹饪用"},
+{"A": "7323930080", "B": "茶座", "C": "teahouse", "D": "不锈钢装饰"},
+{"A": "7323930080", "B": "桌布夹", "C": "Tablecloth clips", "D": "不锈钢 Stainless steelfor fixing tablecloths 用于固定桌布"},
+{"A": "7323930080", "B": "茶漏", "C": "Tea drain", "D": "硅胶+不锈钢茶水过滤"},
+{"A": "7323930080", "B": "量杯", "C": "measuring cup", "D": "stainless steel 不锈钢Home"},
+{"A": "7323930080", "B": "调酒器套装", "C": "Shaker Set", "D": "stainless steel/Make cocktails"},
+{"A": "7323930080", "B": "沥水架", "C": "Drain rack", "D": "不锈钢收纳"},
+{"A": "7323930080", "B": "衣架", "C": "hanger", "D": "不锈钢挂衣服"},
+{"A": "7323930080", "B": "不锈钢酒架", "C": "stainless steel wine rack", "D": "家具装饰"},
+{"A": "7323940026", "B": "搪瓷锅", "C": "Enamel pot", "D": "搪瓷家用"},
+{"A": "7323940030", "B": "搪瓷杯", "C": "Enamel Mug", "D": "冷轧钢日用"},
+{"A": "7323940080", "B": "搪瓷盘", "C": "enamel plate", "D": "搪瓷厨房用品"},
+{"A": "7323997000", "B": "烤笼", "C": "Grill cage", "D": "塑料和金属家用"},
+{"A": "7323997000", "B": "烤盘", "C": "baking pans", "D": "carbon steel烤蛋糕"},
+{"A": "7323997000", "B": "铁锅", "C": "WOK", "D": "铁厨房"},
+{"A": "7323997000", "B": "烤网", "C": "grill rack", "D": "铁/iron家用"},
+{"A": "7323999030", "B": "金属菜板", "C": "Cutting board of metal", "D": "塑料/金属Plastic/Metal/家用"},
+{"A": "7323999030", "B": "烘焙管", "C": "Cannoli Tubbes", "D": "金属Metalbusiness商业"},
+{"A": "7323999030", "B": "蒸架", "C": "steam rack", "D": "金属Metalbusiness商业"},
+{"A": "7323999030", "B": "调味罐", "C": "Steel Seasoning", "D": "Steelfor kitchen"},
+{"A": "7323999030", "B": "钢铁丝水果篮", "C": "Steel wire fruit basket", "D": "钢铁丝Steel wire家用"},
+{"A": "7323999030", "B": "烤网", "C": "grill rack", "D": "铁/iron家用"},
+{"A": "7323999030", "B": "烤篮", "C": "grill basket", "D": "铁/iron家用"},
+{"A": "7323999030", "B": "厨房用具", "C": "kitchenware", "D": "金属+塑料厨房用具"},
+{"A": "7323999040", "B": "铁栅栏", "C": "Safety gate", "D": "铁/iron楼梯防护/stair safety"},
+{"A": "7323999080", "B": "杂物篮", "C": "Storage basket", "D": "铁/metal/收纳/storage"},
+{"A": "7323999080", "B": "压瓶器", "C": "can opener", "D": "金属（metal）/收纳（Receive arrange）"},
+{"A": "7323999080", "B": "夹子", "C": "clip", "D": "metal 金属、Heater accessories 加热炉配件"},
+{"A": "7323999080", "B": "喂鸟器", "C": "bird feeder", "D": "铁+玻璃/Iron + glass/喂鸟/Feeding birds"},
+{"A": "7323999080", "B": "晾衣夹", "C": "clothes pin", "D": "塑料+不锈钢/plastic+stainless steel挂东西/clip sth"},
+{"A": "7323999080", "B": "铁笼", "C": "iron cage", "D": "铁宠物用品"},
+{"A": "7323999080", "B": "野鸟浴盆", "C": "Bird bath", "D": "塑料和铁野鸟洗澡"},
+{"A": "7323999080", "B": "铁夹子", "C": "Iron clamp", "D": "铁/iron家用"},
+{"A": "7323999080", "B": "铁制锅架", "C": "use for Metal Pan organizer", "D": "metal金属use for Metal Pan organizer铁制锅架"},
+{"A": "7323999080", "B": "餐巾环", "C": "Napkin rings", "D": "铁/IronTable decor/餐桌装饰"},
+{"A": "7323999080", "B": "红酒架", "C": "wine rack", "D": "金属家居装饰"},
+{"A": "7323999080", "B": "咖啡杯架", "C": "Coffee cup holder", "D": "青铜铁个人用品"},
+{"A": "7323999080", "B": "烟灰缸", "C": "Ashtray", "D": "金属Metalbusiness商业"},
+{"A": "7323999080", "B": "铲子", "C": "shovel", "D": "金属Metalbusiness商业"},
+{"A": "7323999080", "B": "10寸吊篮", "C": "gondola", "D": "铁（iron）家用"},
+{"A": "7323999080", "B": "铁桶", "C": "bucket", "D": "铁家用"},
+{"A": "7323999080", "B": "铁盘", "C": "iron pan", "D": "铁家用"},
+{"A": "7323999080", "B": "存钱罐", "C": "Piggy bank", "D": "金属收纳"},
+{"A": "7323999080", "B": "滤网筒", "C": "Filter cartridge", "D": "铁丝家用"},
+{"A": "7323999080", "B": "金属托盘", "C": "metal pallet", "D": "铁家用"},
+{"A": "7323999080", "B": "首饰架", "C": "Jewelry holder", "D": "铁日常收纳"},
+{"A": "7323999080", "B": "宠物爬梯", "C": "Pet ladder", "D": "铁制Iron家用household"},
+{"A": "7324100050", "B": "不锈钢水槽", "C": "Stainless steel sink", "D": "不锈钢stainless steel水槽water tank"},
+{"A": "7324900000", "B": "肥皂碟", "C": "soap dish", "D": "不锈钢/Stainless Steel浴室用 for bathroom use"},
+{"A": "7324900000", "B": "地漏黑66", "C": "Floor Drain", "D": "铜copper 过滤filter"},
+{"A": "7324900000", "B": "手持花洒", "C": "Hand held shower", "D": "浴室配件bathroom accessory"},
+{"A": "7324900000", "B": "地漏油擦铜66", "C": "Ground oil spill rub copper 66", "D": "铁/漏水使用"},
+{"A": "7324900000", "B": "不锈钢水槽", "C": "Stainless steel sink", "D": "不锈钢stainless steel水槽water tank"},
+{"A": "7324900000", "B": "浴室直角架", "C": "Shower Caddy Basket Shelf", "D": "stainless steelStorage"},
+{"A": "7324900000", "B": "淋浴房挂架", "C": "Bathroom Shelves", "D": "Stainless steel/不锈钢贮存/storage"},
+{"A": "7326200090", "B": "钥匙链/流苏", "C": "Key chain/tassel", "D": "铁 iron 尼龙,nylon家庭装饰 Home & Kitchen"},
+{"A": "7326200090", "B": "钥匙圈", "C": "key rings", "D": "铁 iron/家庭装饰 Home & Kitchen/办公用品 Office Products"},
+{"A": "7326200090", "B": "钥匙扣", "C": "Key buckle", "D": "锌合金/家用"},
+{"A": "7326200090", "B": "D形环", "C": "d-ring", "D": "不锈钢daily"},
+{"A": "7326200090", "B": "钥匙夹", "C": "KEY HOLDER", "D": "铁合木HOLD KEYS"},
+{"A": "7326200090", "B": "开口圈", "C": "Opening ring", "D": "金属Metal装饰decorate"},
+{"A": "7326901000", "B": "铁盒", "C": "Iron box", "D": "马口铁装"},
+{"A": "7326903500", "B": "不锈钢小酒壶", "C": "stainless steel hip flask", "D": "不锈钢厨房餐桌用"},
+{"A": "7326908688", "B": "管箍套装", "C": "Hoop set", "D": "铁"},
+{"A": "7326908688", "B": "不锈钢扎带", "C": "STAINLESS STEEL TIE", "D": "金属Metal用于捆扎电线Forbundlingwires"},
+{"A": "7326908688", "B": "平面花兰", "C": "planiflorum", "D": "不锈钢/栏杆装饰"},
+{"A": "7326908688", "B": "吊床吊具", "C": "hammock hanging kit", "D": "304不锈钢/304stainlesssteel吊床配件/hammockaccessory"},
+{"A": "7326908688", "B": "升降架", "C": "lighter stand", "D": "铁/支撑"},
+{"A": "7326908688", "B": "夹子", "C": "clip", "D": "stainless steel 不锈钢/办公"},
+{"A": "7326908688", "B": "不锈钢手柄", "C": "Stainless steel handle", "D": "不锈钢Tattoo(纹身）"},
+{"A": "7326908688", "B": "钢管舞管", "C": "Pole dance pipe", "D": "不锈钢/跳舞用"},
+{"A": "7326908688", "B": "支撑杆", "C": "tie-strut", "D": "塑料+铁自用"},
+{"A": "7326908688", "B": "维修凳", "C": "Service stool", "D": "metal/摩托车配件"},
+{"A": "7326908688", "B": "卡扣", "C": "CLIPS", "D": "iron/铁/connection/连接用"},
+{"A": "7326908688", "B": "挂钩", "C": "Hanging Hook", "D": "铁挂钩"},
+{"A": "7326908688", "B": "悬挂灯绳", "C": "Pendant cord", "D": "METAL 金属/户外灯具配件 Outdoor lighting accessories"},
+{"A": "7326908688", "B": "旗杆", "C": "Flag Pole", "D": "不锈钢/旗子用"},
+{"A": "7326908688", "B": "摄影夹子", "C": "Iron storage Products", "D": "铁/摄影器材"},
+{"A": "7326908688", "B": "喂鸟器", "C": "Solar Bird Feeder", "D": "金属/ iron/宠物用品/pet supplies"},
+{"A": "7326908688", "B": "桶", "C": "bucket", "D": "铁容器"},
+{"A": "7326908688", "B": "小黑夹", "C": "Small black clip", "D": "铁/工具"},
+{"A": "7326908688", "B": "弹簧风绳扣", "C": "small spring", "D": "钢/户外"},
+{"A": "7326908688", "B": "船外机配件", "C": "Outboard engine accessories", "D": "铁/船外机制造"},
+{"A": "7326908688", "B": "滑轨套装", "C": "Rail guide set", "D": "METAL金属Do carpentry"},
+{"A": "7326908688", "B": "拖车钩", "C": "TOW HOOK", "D": "铁拖车"},
+{"A": "7326908688", "B": "大桌脚", "C": "furniture levelers", "D": "Metals and plastics金属；塑料调整桌脚用"},
+{"A": "7326908688", "B": "过滤网", "C": "filter screen", "D": "钢/过滤"},
+{"A": "7326908688", "B": "置物架", "C": "shelf", "D": "金属 Metal/储藏 Storage"},
+{"A": "7326908688", "B": "螺旋地锚", "C": "spiral ground anchor", "D": "钢/steel扎帐篷/used for tent"},
+{"A": "7326908688", "B": "头盔架", "C": "Helmet rack", "D": "不锈钢生活用品"},
+{"A": "7326908688", "B": "相机安装板", "C": "camera mounting plate", "D": "metalmounting camera"},
+{"A": "7326908688", "B": "骑马卡", "C": "Riding card", "D": "不锈钢工具"},
+{"A": "7326908688", "B": "游艇油壶", "C": "Yacht Fuel Tank", "D": "不锈钢用于游艇发动机系统(use for Yacht engine  system)"},
+{"A": "7326908688", "B": "不锈钢盒子", "C": "Stainless steel box", "D": "Stainlessaccept"},
+{"A": "7326908688", "B": "抓片", "C": "claw", "D": "焊接（welding）stainless steel（不锈钢）"},
+{"A": "7326908688", "B": "不锈钢挡板", "C": "Stainless steel baffle", "D": "不锈钢Block finger"},
+{"A": "7326908688", "B": "杂志篮", "C": "basket", "D": "铁储存"},
+{"A": "7326908688", "B": "法兰垫片", "C": "flange gasket", "D": "铁垫"},
+{"A": "7326908688", "B": "铁制盒子", "C": "Iron box", "D": "铁收纳"},
+{"A": "7326908688", "B": "插头盖", "C": "Plug Cover", "D": "Metal金属小工具"},
+{"A": "7326908688", "B": "管子", "C": "tube", "D": "不锈钢stainless steelhome 家用"},
+{"A": "7326908688", "B": "铁艺架", "C": "Wrought iron rack", "D": "Iron （铁）物品收纳"},
+{"A": "7326908688", "B": "夹子", "C": "Iron storage Products", "D": "金属配件"},
+{"A": "7326908688", "B": "黑色钳子架", "C": "Black Pliers Rack", "D": "金属放工具"},
+{"A": "7326908688", "B": "卡箍", "C": "V-Band Clamps", "D": "铁，不锈钢用于2个管子之间的连通以及固定"},
+{"A": "7326908688", "B": "铁片", "C": "Iron sheet", "D": "铁装饰"},
+{"A": "7326908688", "B": "梯腿", "C": "ladder legs", "D": "metal（金属）梯子延伸Ladder extension"},
+{"A": "7326908688", "B": "假发挂架", "C": "wig holder", "D": "铁展示架"},
+{"A": "7326908688", "B": "投影托盘", "C": "projection tray", "D": "金属Metal投影支架"},
+{"A": "7326908688", "B": "铁架", "C": "Iron Frame", "D": "金属家用"},
+{"A": "7326908688", "B": "婚礼圆环", "C": "wedding arch", "D": "金属metalwedding arch婚礼拱门"},
+{"A": "7326908688", "B": "印花钢板套装", "C": "Image Plate Set", "D": "Matel+PU印制图案"},
+{"A": "7326908688", "B": "围墙防护工具", "C": "fence protection tool", "D": "铁/iron防护/protection"},
+{"A": "7326908688", "B": "铁地插", "C": "Iron ground plug", "D": "钢装饰"},
+{"A": "7326908688", "B": "法兰黑色", "C": "Flange black", "D": "不锈钢配件"},
+{"A": "7326908688", "B": "钣金件", "C": "Sheet metal parts", "D": "铁Sheet metal parts"},
+{"A": "7326908688", "B": "鹦鹉挂笼装饰", "C": "Parrot hanging cage decoration", "D": "不锈钢宠物用品"},
+{"A": "7326908688", "B": "尼龙盖", "C": "Nylon cover", "D": "尼龙nylonaccessories"},
+{"A": "7326908688", "B": "框子", "C": "Frame", "D": "铁日用"},
+{"A": "7326908688", "B": "管道夹", "C": "Duct Clamps", "D": "不锈钢用于管子之间连通"},
+{"A": "7326908688", "B": "金属扣", "C": "metal button", "D": "金属家用"},
+{"A": "7326908688", "B": "书签", "C": "book marks", "D": "合金metal alloy礼品书签gift set bookmark"},
+{"A": "7326908688", "B": "花篮", "C": "FLOWER BASKET", "D": "铁装饰"},
+{"A": "7326908688", "B": "铁盘", "C": "iron plate", "D": "金属家用"},
+{"A": "7326908688", "B": "钢管舞配件", "C": "POLE DANCING ACCESSORIES", "D": "Stainless steeldance"},
+{"A": "7326908688", "B": "金属架", "C": "Metal bracket", "D": "金属工具"},
+{"A": "7326908688", "B": "金属杆", "C": "Metal rod", "D": "金属工具"},
+{"A": "7326908688", "B": "铁皮扣", "C": "Iron buckle", "D": "metal/金属包装用品"},
+{"A": "7326908688", "B": "铁篮子", "C": "metal bike basket", "D": "metalStorage"},
+{"A": "7326908688", "B": "树桩", "C": "tree stake", "D": "钢制保护树"},
+{"A": "7326908688", "B": "钢板", "C": "steel", "D": "steelmake tool"},
+{"A": "7326908688", "B": "钢板", "C": "steel", "D": "steelmake tool"},
+{"A": "7326908688", "B": "灯串杆", "C": "string light poles", "D": "金属灯杆"},
+{"A": "7326908688", "B": "床单夹", "C": "bed sheet clip", "D": "涤纶+铁固定"},
+{"A": "7326908688", "B": "铁制支架", "C": "Iron bracket", "D": "铁管/Iron pipe花园装饰/Garden decoration"},
+{"A": "7326908688", "B": "线芯尾帽", "C": "Core tail cap", "D": "合金自行车配件"},
+{"A": "7326908688", "B": "铁联结器", "C": "steel coupler", "D": "铁连接"},
+{"A": "7326908688", "B": "固定器", "C": "Car Fixer", "D": "铁iron固定缝隙Gap holder"},
+{"A": "7326908688", "B": "不锈钢圈", "C": "Stainless steel ring", "D": "不锈钢生活用品"},
+{"A": "7326908688", "B": "旗杆套件", "C": "flagpole", "D": "不锈钢装饰"},
+{"A": "7326908688", "B": "吸风罩", "C": "Suction hood", "D": "Stainless steelocclude"},
+{"A": "7326908688", "B": "电脑显示屏增高架", "C": "Elevated computer display", "D": "IronOffice"},
+{"A": "7326908688", "B": "园艺扎线", "C": "twist wire", "D": "橡胶+铁丝捆扎植物"},
+{"A": "7326908688", "B": "相机支架", "C": "mount for Camera", "D": "金属/MetalCamera Accessories/相机配件"},
+{"A": "7326908688", "B": "合金环", "C": "Alloy ring", "D": "合金装饰"},
+{"A": "7326908688", "B": "金属扎线带", "C": "Metal Wire Tie", "D": "不锈钢绑扎电缆"},
+{"A": "7326908688", "B": "花盆", "C": "Iron flower frame", "D": "铁/塑料养花"},
+{"A": "7326908688", "B": "垃圾桶", "C": "Trash Can", "D": "铁Iro装垃圾Trash can"},
+{"A": "7326908688", "B": "接地夹", "C": "Ground Clamp", "D": "金属夹子"},
+{"A": "7326908688", "B": "钢扣", "C": "Steel Buckle", "D": "金属配件"},
+{"A": "7326908688", "B": "拖车连接器", "C": "Trailer Connector", "D": "金属日用"},
+{"A": "7326908688", "B": "金属标签", "C": "Metal Label", "D": "金属花园标记"},
+{"A": "7326908688", "B": "防潮箱", "C": "Dry Cabinet", "D": "iron相机存储"},
+{"A": "7326908688", "B": "五金托盘", "C": "Metal holder", "D": "五金铁材固定东西Fixed things"},
+{"A": "7326908688", "B": "卡片夹", "C": "card holder", "D": "金属夹贺卡的夹子"},
+{"A": "7326908688", "B": "可伸缩指挥棒", "C": "Retractable baton", "D": "不锈钢+海绵Stainless steel + sponge用于教师指挥For teacher's command"},
+{"A": "7326908688", "B": "洞板挂钩", "C": "pegboard hook", "D": "铁iron收纳物品storage"},
+{"A": "7326908688", "B": "防滑链", "C": "tyre chain", "D": "铜/塑料/铁  Copper/Plastic/Steel用于汽车            Use for Vehicle"},
+{"A": "7326908688", "B": "圆柱筒", "C": "cylinder", "D": "铁装饰"},
+{"A": "7326908688", "B": "支架", "C": "Stent", "D": "金属支架"},
+{"A": "7326908688", "B": "紧固螺栓", "C": "Fastening bolts", "D": "PEFastening"},
+{"A": "7326908688", "B": "铁制配件", "C": "Iron fittings", "D": "铁配件"},
+{"A": "7326908688", "B": "汽车修复工具", "C": "Car Dent Repair Kit", "D": "铝维修更换"},
+{"A": "7326908688", "B": "花园卷管架", "C": "Garden roll tube holder", "D": "stainless steelinstall"},
+{"A": "7610100010", "B": "铝制玻璃窗", "C": "ALUMINUM GLASS WINDOW", "D": "铝，玻璃装修"},
+{"A": "7615103025", "B": "锅", "C": "pot", "D": "Aluminumcooking"},
+{"A": "7615103025", "B": "不粘锅套装", "C": "Non-stick pan set", "D": "铝 aluminium/烹饪COOKING"},
+{"A": "7615103025", "B": "煎盘", "C": "skillet", "D": "Aluminum/cooking"},
+{"A": "7615103025", "B": "mini煎锅", "C": "mini frying pan", "D": "金属（metal）烹饪（cooking）"},
+{"A": "7615107125", "B": "锡箔餐盒", "C": "Foil boxes", "D": "锡包装"},
+{"A": "7615107125", "B": "铝箔蛋糕杯", "C": "Aluminum foil cake cup", "D": "铝箔装"},
+{"A": "7615107130", "B": "饼干模", "C": "Cookies Mould", "D": "铝制 Aluminium饼干模 biscuit mold"},
+{"A": "7615107130", "B": "面包盘", "C": "Loaf Pans", "D": "铝箔/Aluminum烘焙/cooking"},
+{"A": "7615107130", "B": "铝箔蛋糕模具", "C": "Aluminum foil cake mould", "D": "铝箔纸装"},
+{"A": "7615107155", "B": "锅具套装", "C": "Pot set", "D": "铝制厨房用"},
+{"A": "7615107180", "B": "吸管套装", "C": "straw", "D": "不锈钢/厨房用"},
+{"A": "7615109100", "B": "开盖器", "C": "cap opener", "D": "铝开瓶盖"},
+{"A": "7615109100", "B": "压罐器", "C": "Aluminum can compactor", "D": "金属/压易拉罐瓶"},
+{"A": "7615109100", "B": "存储罐", "C": "Storage tank", "D": "铝日用"},
+{"A": "7615109100", "B": "磁夹", "C": "Magnetic clip", "D": "铝家用"},
+{"A": "7615200000", "B": "浴室置物架", "C": "bathroom shelf", "D": "铝/aluminum浴室挂件"},
+{"A": "7615200000", "B": "置物架", "C": "Bathroom Shelf", "D": "Space aluminum/太空铝贮存/storage"},
+{"A": "7615200000", "B": "厕纸架", "C": "toilet paper holder", "D": "aluminium 铝/home use 家用"},
+{"A": "7615200000", "B": "纸巾架", "C": "paper holder", "D": "aluminum太空铝store paper    存储纸巾"},
+{"A": "7615200000", "B": "玻璃置物架", "C": "bathroom shelves", "D": "glass+aluminumbathroom shelves"},
+{"A": "7616109090", "B": "垫片紧固件", "C": "FEDNER WASHER", "D": "铝，铁主要用于汽车发动机上，紧固松动部位"},
+{"A": "7616109090", "B": "螺丝", "C": "screw nuts", "D": "铝aluminum用于汽车更换维修"},
+{"A": "7616109090", "B": "螺丝固定环", "C": "screw plate", "D": "铝aluminum用于汽车更换维修"},
+{"A": "7616109090", "B": "汽车螺栓", "C": "automotive bolts", "D": "aluminium/铝fixed car tires/固定车轮"},
+{"A": "7616109090", "B": "螺母", "C": "lug nuts", "D": "aluminium/铝fixed car tires/固定车轮"},
+{"A": "7616109090", "B": "弹性螺母滑块", "C": "nut", "D": "锌合金铝型材组装配件"},
+{"A": "7616995130", "B": "伸缩梯", "C": "extending ladder", "D": "铝/非工业"},
+{"A": "7616995130", "B": "铝梯", "C": "Aluminum Ladder", "D": "铝非工业用"},
+{"A": "7616995190", "B": "钩针", "C": "Crochet hook", "D": "铝 Aluminum/家用配件 home accessories"},
+{"A": "7616995190", "B": "宴会包", "C": "Party bag", "D": "alluminum/铝Accessories/配饰"},
+{"A": "7616995190", "B": "铝桶", "C": "Aluminum Drum", "D": "aluminum/DIY"},
+{"A": "7616995190", "B": "汽车垫高块", "C": "washer", "D": "aluminium/铝Height, used to fit the hood closure/垫高，用于适配引擎盖闭合"},
+{"A": "7616995190", "B": "连接杆", "C": "Traction Control Tie Bar", "D": "aluminum铝用于汽车安装配件（use for car parts installation)"},
+{"A": "7616995190", "B": "卡箍", "C": "clamp", "D": "aluminum铝用于汽车安装配件（use for car parts installation)"},
+{"A": "7616995190", "B": "15mm管", "C": "15mm rod", "D": "铝合金相机跟焦配件拓展"},
+{"A": "7616995190", "B": "相机支架", "C": "camera bracket", "D": "铝合金拓展相机配件"},
+{"A": "7616995190", "B": "固定扣", "C": "Fixed buckle", "D": "铝合金/aluminium alloy工具"},
+{"A": "7616995190", "B": "气球尺", "C": "Balloon ruler", "D": "铝+PVC生活用品"},
+{"A": "7616995190", "B": "修车架", "C": "Car frame", "D": "金属支架"},
+{"A": "7616995190", "B": "小瓶子", "C": "Small bottle", "D": "aluminium alloy收纳"},
+{"A": "7616995190", "B": "铝杆", "C": "Aluminum", "D": "铝支撑"},
+{"A": "7616995190", "B": "船罩支杆", "C": "Boat Cover Poles", "D": "超轻铝、塑料船罩支撑杆"},
+{"A": "7616995190", "B": "铝制扎线盘", "C": "Aluminum tie wire reel", "D": "铝钢丝收纳工具"},
+{"A": "7616995190", "B": "邮箱门框架", "C": "mailbox door frame", "D": "合金家用/Home"},
+{"A": "7616995190", "B": "铝线盒", "C": "ALUMINUM TIE WIRE REEL", "D": "铝/aluminum钢丝工具/wire tools"},
+{"A": "7616995190", "B": "笔记本支架", "C": "Laptop Stand", "D": "金属laptop stand&desk"},
+{"A": "7616995190", "B": "炉子磁顶架", "C": "Stove Top Shelf", "D": "铝/Stainless Steel家装建材Home&Kitchen"},
+{"A": "7616995190", "B": "铝合金板", "C": "Anodized plates", "D": "铝合金（Aluminum ）用于过滤用的水漏板（Housing for storages ）"},
+{"A": "7616995190", "B": "支架", "C": "holder", "D": "铝合金支撑"},
+{"A": "7616995190", "B": "铝板", "C": "Aluminum plate", "D": "铁日用"},
+{"A": "7616995190", "B": "铝件连接器", "C": "Aluminium part connector", "D": "铝合金连接器"},
+{"A": "7616995190", "B": "自动鸡笼门", "C": "automatic chicken coop door", "D": "铝塑料鸡用"},
+{"A": "7616995190", "B": "自行车修理架", "C": "bike repair stand", "D": "铝合金aluminium alloy自行车配件"},
+{"A": "7616995190", "B": "鸡笼加热板", "C": "chicken coop heater", "D": "铝塑料鸡用"},
+{"A": "8302103000", "B": "铰链", "C": "door hinge", "D": "金属/Metal汽车更换配件(automotive replacement )"},
+{"A": "8302103000", "B": "后窗铰链", "C": "Car door hinge", "D": "金属/Metal汽车更换配件(automotive replacement )"},
+{"A": "8302103000", "B": "门铰链", "C": "Door Hinge", "D": "铁/汽车配件更换"},
+{"A": "8302103000", "B": "窗铰链", "C": "window butt", "D": "铁/汽车配件更换"},
+{"A": "8302106030", "B": "4寸平开合页", "C": "door hinges", "D": "不锈钢五金"},
+{"A": "8302106030", "B": "合页", "C": "hinges", "D": "金属家用"},
+{"A": "8302106060", "B": "铰链修复版", "C": "Hinge repair version", "D": "金属Metal修复柜门Repair the cabinet door"},
+{"A": "8302106090", "B": "洗衣机门铰链", "C": "Washer Door Hinge", "D": "alloy+plastic 合金+塑料/Washer Repair 洗衣机维修"},
+{"A": "8302106090", "B": "活动铰链", "C": " living hinge", "D": "锌合金Zinc alloy铝型材组装配件"},
+{"A": "8302106090", "B": "铰链", "C": "Hinge Set", "D": "金属铰链"},
+{"A": "8302106090", "B": "暗铰", "C": "concealed hinge", "D": "合金alloydoor hinge门铰链"},
+{"A": "8302200000", "B": "转椅万向轮", "C": "Swivel chair cardan", "D": "ABS/塑料/维修办公椅 RepairOfficeChair"},
+{"A": "8302200000", "B": "宜家脚轮", "C": "office  chair casters", "D": "尼龙+聚氨酯/运输/transport"},
+{"A": "8302200000", "B": "3英寸刹车万向轮", "C": "3 inch brake wheel", "D": "ABS/塑料/维修办公椅 Repair Office Chair"},
+{"A": "8302200000", "B": "双头脚轮", "C": "Double-ended casters", "D": "pu+聚氨酯/运输/transport"},
+{"A": "8302200000", "B": "脚轮", "C": "Casters", "D": "Ironandpolyurethane/椅子轮"},
+{"A": "8302303060", "B": "车门滑轮", "C": "Door pulley", "D": "铁  /汽车更换配件"},
+{"A": "8302303060", "B": "汽车大灯支架", "C": "car headlight bracket", "D": "不锈钢（stainless steel）用于汽车大灯系统(use for car headlight system)"},
+{"A": "8302303060", "B": "摩托车雾灯支架套装", "C": "Motorcycle fog light stand set", "D": "铝合金  aluminum用于摩托车外观改装"},
+{"A": "8302303060", "B": "摩托车挡风压条", "C": "Motorcycle windproof strip", "D": "铝合金  aluminum用于摩托车外观改装"},
+{"A": "8302303060", "B": "汽车夹子", "C": "Car clip", "D": "铝/aluminum固定汽车储物箱"},
+{"A": "8302303060", "B": "汽车尾门把手", "C": "tail door handle", "D": "铝/aluminum开启车门"},
+{"A": "8302303060", "B": "汽车后备箱支撑杆", "C": "Car trunk support rod", "D": "不锈钢/用汽车引擎盖支撑"},
+{"A": "8302303060", "B": "汽车保险杠支架", "C": "Car bumper bracket", "D": "不锈钢Use for Car safety system/用于汽车安全功能"},
+{"A": "8302303060", "B": "汽车旗杆架", "C": "Car flagpole frame", "D": "不锈钢Use for car decorate system/用于汽车装饰功能"},
+{"A": "8302303060", "B": "汽车门把手", "C": "car door handle", "D": "不锈钢Use for Car door system/用于汽车门功能"},
+{"A": "8302303060", "B": "汽车发动机支架", "C": "car engine bracket", "D": "不锈钢Use for Car engine system/用于汽车发动机功能"},
+{"A": "8302303060", "B": "引擎支架", "C": "egine mount", "D": "iron/铁用于汽车安装配件（use for car parts installation)"},
+{"A": "8302303060", "B": "车盖扣", "C": "Latch Locking Hood Catch", "D": "合金车盖扣"},
+{"A": "8302303060", "B": "卡车包角", "C": "The truck cab corner", "D": "铁包角"},
+{"A": "8302303060", "B": "脚踏板", "C": "The pedals", "D": "金属脚踏板"},
+{"A": "8302303060", "B": "引擎盖锁", "C": "Hood Pins Lock", "D": "铁 iron用于汽车引擎盖插销for car hood latch"},
+{"A": "8302303060", "B": "汽车门辊", "C": "Sliding Door Roller", "D": "金属/汽车门辊"},
+{"A": "8302303060", "B": "挂钩安装汽车支架", "C": "Hitch Mount Flag Pole Holder", "D": "铁汽车使用"},
+{"A": "8302303060", "B": "门拉手", "C": "Exterior Rear Door Handle", "D": "塑料 铝汽车零部件"},
+{"A": "8302303060", "B": "托架", "C": "Bracket", "D": "铝用于支撑汽车零部件（used for support of auto parts)"},
+{"A": "8302303060", "B": "车门限位器", "C": "door strap", "D": "铁metal汽车更换维修Car replacement and maintenance"},
+{"A": "8302303060", "B": "汽车备胎架", "C": "car spare tire rack", "D": "不锈钢Use for Car frame system/用于汽车框架功能"},
+{"A": "8302303060", "B": "金属固定拉环", "C": "Tie-Down Kits", "D": "金属用于货物的固定"},
+{"A": "8302303060", "B": "汽车备胎架", "C": "car spare tire rack", "D": "不锈钢Use for Car frame system/用于汽车框架功能"},
+{"A": "8302303060", "B": "皮卡车盖", "C": "truck bed cover", "D": "网布+铝+PVC皮卡车后盖"},
+{"A": "8302303060", "B": "插销组", "C": "stake pocket d ring", "D": "metaltighten products"},
+{"A": "8302416015", "B": "门把手", "C": "door handles", "D": "Metals and plastics金属；塑料方便开门"},
+{"A": "8302416015", "B": "门撑门挡", "C": "ajustable door bar", "D": "钢门"},
+{"A": "8302416015", "B": "逃生锁", "C": "door handle", "D": "锌合金五金"},
+{"A": "8302416015", "B": "便携式门锁", "C": "portable door lock", "D": "钢，PP门"},
+{"A": "8302416015", "B": "门碰", "C": "door stopper", "D": "不锈钢装饰"},
+{"A": "8302416015", "B": "门闩", "C": "Door Latch", "D": "不锈钢家用"},
+{"A": "8302416015", "B": "门栓", "C": "door lock", "D": "铁iron个人使用personal use"},
+{"A": "8302416045", "B": "可视门铃架", "C": "Doorbell Mount", "D": "铁、塑料门铃保护架"},
+{"A": "8302416050", "B": "窗帘滑轨", "C": "curtain track", "D": "铁/家居"},
+{"A": "8302416050", "B": "窗帘夹", "C": "Curtain Clips", "D": "铁/iron/装饰"},
+{"A": "8302416050", "B": "带夹子的窗帘环", "C": "Curtain loop with clip", "D": "铁金属/Iron metal挂窗帘/Hang the curtain"},
+{"A": "8302416050", "B": "浴帘挂钩", "C": "shower curtain hooks", "D": "铁 iron挂浴帘hanger shower curtain"},
+{"A": "8302416050", "B": "弹簧支撑杆", "C": "tension curtain rod", "D": "塑料，铁；PVC，steel挂窗帘；hanging curtains"},
+{"A": "8302416050", "B": "柔性窗帘轨道", "C": "flexible curtain track", "D": "塑料，铁；PVC，steel挂窗帘；hanging curtains"},
+{"A": "8302416050", "B": "窗帘杆支架", "C": "curtain rod holder", "D": "铝，aluminum安装窗帘杆，hold curtain rods"},
+{"A": "8302416050", "B": "窗帘绑带", "C": "curtain tie", "D": "铁,steel绑窗帘，hold curtain"},
+{"A": "8302416050", "B": "窗帘轨道配件", "C": "curtain track accessory", "D": "塑料，铁；PVC，steel挂窗帘；hanging curtains"},
+{"A": "8302416050", "B": "挂帘钩", "C": "Curtain hook", "D": "Stainless不锈钢Household products家居用品"},
+{"A": "8302416050", "B": "40件套黑色窗帘吊环", "C": "40pcs black curtain rings", "D": "金属/metal窗帘吊环和尖钩/curtain rings and hooks"},
+{"A": "8302416050", "B": "伸缩杆", "C": "telescopic rod", "D": "iron家居"},
+{"A": "8302416050", "B": "天幕杆", "C": "Curtain Rod", "D": "金属天幕撑杆"},
+{"A": "8302416080", "B": "楼梯扶手", "C": "Stair handrail", "D": "金属/钻孔"},
+{"A": "8302416080", "B": "门撑", "C": "BACK DOOR STAY ASSY", "D": "铁/支撑"},
+{"A": "8302416080", "B": "防滑杆", "C": "Anti-skid fixed rod", "D": "不锈钢固定"},
+{"A": "8302416080", "B": "弹簧杆", "C": "Spring rod", "D": "铁家用"},
+{"A": "8302416080", "B": "门配件", "C": "door handle", "D": "铁门用"},
+{"A": "8302416080", "B": "淋浴房滑轮", "C": "Pulley of shower room", "D": "stainless steel移门滑轮"},
+{"A": "8302416080", "B": "门窗限位器", "C": "Window Lock", "D": "铝合金家居用品"},
+{"A": "8302416080", "B": "平角码", "C": "Flat plate", "D": "金属工具"},
+{"A": "8302419080", "B": "扶手杆", "C": "grab bar", "D": "浴室用 for bathroom use"},
+{"A": "8302423065", "B": "五金拉手", "C": "Door handle", "D": "Zinc alloy  锌合金 Zinc alloy  锌合金/家具Furniture 家具Furniture"},
+{"A": "8302423065", "B": "屏风支架", "C": "Screen support", "D": "铝/夹屏风板"},
+{"A": "8302423065", "B": "假门把手", "C": "False door handle", "D": "五金 Hardware日用 Daily use"},
+{"A": "8302423065", "B": "衣柜隔栏", "C": "closet shelf divider", "D": "steel iron/碳钢/closet shelf organizing/衣柜收纳"},
+{"A": "8302423065", "B": "五金脚", "C": "Aluminum alloy five-star foot", "D": "金属/家具配件"},
+{"A": "8302423065", "B": "锌合金夹", "C": "Zinc Alloy Clips", "D": "IronUse for individual earrings making"},
+{"A": "8302423065", "B": "屏风夹", "C": "Screen folder", "D": "Iron （铁）办公桌面屏风夹"},
+{"A": "8302423065", "B": "闭门器", "C": "Door Closer", "D": "钢冰柜配件"},
+{"A": "8302423065", "B": "桌底集线器", "C": "Desk Cable Management Tray", "D": "metal/金属for home/家用"},
+{"A": "8302423065", "B": "床脚防滑杆", "C": "Bed foot anti-skid bar", "D": "不锈钢装饰"},
+{"A": "8302496055", "B": "船用五金", "C": "Marine Hardware", "D": "不锈钢stainless steelaccessories"},
+{"A": "8302496055", "B": "船用凸轮锁", "C": "Marine CAM lock", "D": "不锈钢stainless steelaccessories"},
+{"A": "8302496055", "B": "船用防滑钉", "C": "Marine cleats", "D": "不锈钢stainless steelaccessories"},
+{"A": "8302496055", "B": "船夹板", "C": "Boat Cleat", "D": "不锈钢stainless steelaccessories"},
+{"A": "8302496085", "B": "地轮", "C": "land wheel", "D": "碳钢/Metal/家具用地轮/Floor roller for Furniture"},
+{"A": "8302496085", "B": "箱扣", "C": "Box buckle", "D": "Stainless steel （不锈钢）箱子搭扣"},
+{"A": "8302500000", "B": "毛巾杆", "C": "towel bar", "D": "铜/Brass浴室用 for bathroom use"},
+{"A": "8302500000", "B": "浴巾架", "C": "Bath accessories", "D": "铜/Brass浴室配件bathroom accessories"},
+{"A": "8302500000", "B": "挂钩", "C": "a hook", "D": "浴室配件bathroom accessory"},
+{"A": "8302500000", "B": "毛巾杆套装", "C": "towel bar set", "D": "不锈钢/stainless steel/家居建材/Home&Kitchen"},
+{"A": "8302500000", "B": "浴室挂件", "C": "Bathroom accessories", "D": "铜/BRASS浴室挂件"},
+{"A": "8302500000", "B": "毛巾环", "C": "towel ring", "D": "不锈钢/stainlesssteel家居建材/Home&Kitchen"},
+{"A": "8302500000", "B": "毛巾架", "C": "TOWEL HOLDER STAND", "D": "塑料+不锈钢/挂毛巾"},
+{"A": "8302500000", "B": "两个装猫头鹰挂钩", "C": "Two owl hooks", "D": "irondecoration"},
+{"A": "8302500000", "B": "毛巾钩", "C": "towel hooks", "D": "不锈钢/Stainless Steel家装建材 Home&Kitchen"},
+{"A": "8302500000", "B": "浴室挂钩", "C": "bathroom hook", "D": "铁(iron)挂钩(hook)"},
+{"A": "8302500000", "B": "晾衣杆", "C": "Clothesline pole", "D": "铜/Brass浴室配件bathroom accessory"},
+{"A": "8302500000", "B": "悬挂自行车架", "C": "Suspension bike rack", "D": "stainless steel/自行车停放 Bicycle parking"},
+{"A": "8302500000", "B": "支架", "C": "bracket", "D": "铁/支撑，装饰"},
+{"A": "8302500000", "B": "吹风机支架", "C": "hair dryer holder", "D": "锌合金 zinc alloy/置物收纳用for storage"},
+{"A": "8302500000", "B": "置物架", "C": "commodity shelf", "D": "铝合金/置物"},
+{"A": "8302500000", "B": "挂件", "C": "Pendant", "D": "合成木/装饰"},
+{"A": "8302500000", "B": "弯钩", "C": "hook", "D": "铁/置物"},
+{"A": "8302500000", "B": "水槽支架", "C": "Sink bracket", "D": "金属、塑料Sink repair kit水槽维修套件"},
+{"A": "8302500000", "B": "浴室五金件", "C": "hardware of bathroom", "D": "铁配件"},
+{"A": "8302500000", "B": "L支架角撑", "C": "L support angle brace", "D": "碳钢工具"},
+{"A": "8302500000", "B": "壁挂架", "C": "Wall mount", "D": "铁制Iron收纳Storage"},
+{"A": "8302500000", "B": "钥匙钩", "C": "Key hook", "D": "Metal/decorationhome use/家用"},
+{"A": "8302500000", "B": "钥匙挂钩", "C": "key holder", "D": "铁Iron挂钥匙Hold keys"},
+{"A": "8302500000", "B": "铁钩子", "C": "Iron hook", "D": "铁生活用品"},
+{"A": "8302500000", "B": "工具架", "C": "TOOL HOLDER", "D": "铁置物"},
+{"A": "8302500000", "B": "吉他挂钩", "C": "Guitar Hanger", "D": "铁材+EVA海棉挂吉他用"},
+{"A": "8302500000", "B": "炉架", "C": "stove top shelf", "D": "不锈钢/Stainless Steel家装建材Home&Kitchen"},
+{"A": "8302500000", "B": "金属架", "C": "Metal bracket", "D": "金属工具"},
+{"A": "8305100050", "B": "书圈", "C": "book circle", "D": "金属书圈"},
+{"A": "8305100050", "B": "活⻚夹", "C": "Clamp", "D": "PVC⽂具收纳 Stationery Storage"},
+{"A": "8305903050", "B": "小铁夹", "C": "Iron clamp", "D": "铁/iron/固定/fixed"},
+{"A": "8305903050", "B": "票夹", "C": "letter clip", "D": "金属/收纳"},
+{"A": "8305903050", "B": "两脚钉", "C": "brads", "D": "ironHand decoration"},
+{"A": "8306300000", "B": "悬挂相框", "C": "Hanging Photo Frame", "D": "金属和玻璃/Metal and GlassHanging Photo Frame"},
+{"A": "8415908045", "B": "汽车空调零件", "C": "Auto Air Conditioning Parts", "D": "材质构成：ABS配件"},
+{"A": "8415908085", "B": "空调管子", "C": "Air conditioning pipe", "D": "plastic空调使用 Repair Air Conditioner "},
+{"A": "8415908085", "B": "冷凝器", "C": "condenser", "D": "Metal 金属冷却/Cool Down"},
+{"A": "8418998060", "B": "冰箱除霜器", "C": "Refrigerator defroste", "D": "RepairRefrigerator维修冰箱"},
+{"A": "8418998060", "B": "冰箱配件", "C": "The refrigerator accessories", "D": "ABS配件 Accessories"},
+{"A": "8418998060", "B": "汽车冰箱支架", "C": "Car refrigerator stand", "D": "不锈钢（stainless steel）/用于汽车冰箱系统(use for car refrigerator  system)"},
+{"A": "8418998060", "B": "控制板", "C": "Refrigerator parts", "D": "Plastic, metal/塑料、金属Replacement Part/冰箱更换部件"},
+{"A": "8418998060", "B": "冰箱启动配件", "C": "Refrigerator accessories", "D": "塑料Refrigerator accessories/冰箱配件"},
+{"A": "8418998060", "B": "冰箱隔板", "C": "refrigerator divider", "D": "塑料/plasticrepair kit维修套件"},
+{"A": "8419901000", "B": "热水器零件", "C": "water heater parts", "D": "METAL金属Water heater accessories 热水器配件"},
+{"A": "8422900640", "B": "塑料支架", "C": "plastic stent", "D": "ABS配件Accessories"},
+{"A": "8422900640", "B": "洗碗机配件", "C": "Dishwasher Accessories", "D": "ABS+Metal配件Accessories"},
+{"A": "8422900640", "B": "洗碗机篮", "C": "Basket", "D": "塑料摆放碗筷"},
+{"A": "8424909080", "B": "洗地盘", "C": "Black Concrete Pressure Washer Surface Cleane", "D": "铝和塑料清洗车底"},
+{"A": "8424909080", "B": "高压清洗配件", "C": "pressure washer accessories", "D": "Copper, stainless steel，plasticpressure washer hose set"},
+{"A": "8431499095", "B": "红色油罐", "C": "Billet Catch Can", "D": "塑料/油箱使用"},
+{"A": "8473305100", "B": "键帽", "C": "Keycap", "D": "pbt pbt/键盘 keyboard"},
+{"A": "8473305100", "B": "电脑机架", "C": "CHASSIS", "D": "钢/steel组装配件电脑机箱/Assemble accessories computer case"},
+{"A": "8473305100", "B": "鼠标垫", "C": "Mouse Pad", "D": "橡胶rubber/辅助定位Auxiliary positioning"},
+{"A": "8473305100", "B": "硒鼓", "C": "selenium drum", "D": "Plastic塑料/For Printer用于打印机"},
+{"A": "8473305100", "B": "打印机组件", "C": "printer module", "D": "plastic塑料Waste Ink Collector废墨收集盒"},
+{"A": "8473305100", "B": "机箱", "C": "CHASSIS", "D": "铁电脑主机/配置：风扇，机箱，电源线Octominer牌/型号：X12ULTRA/无操作系统"},
+{"A": "8473305100", "B": "键盘托", "C": "Keyboard Wrist Rest(", "D": "PU leather,Lycra fabric and RubberWrist Support(用于手腕支撑)"},
+{"A": "8473305100", "B": "电脑维修工具", "C": "Computer Repair Tools", "D": "塑料Plasticbusiness商业"},
+{"A": "8473305100", "B": "键盘折叠支架", "C": "Folding bracket for keyboard", "D": "aluminium alloy 铝合金for laptops 用于笔记本电脑"},
+{"A": "8473305100", "B": "鼠标垫", "C": "mouse pad", "D": "橡胶use"},
+{"A": "8473305100", "B": "塑胶笔", "C": "Plastic pen", "D": "POMwrite"},
+{"A": "8479899599", "B": "热压机", "C": "Hot press", "D": "ABS热压"},
+{"A": "8479899599", "B": "自动贴片机", "C": "Automatic mounting machine", "D": "铁贴片"},
+{"A": "8479899599", "B": "洗地机", "C": "Cleaning machine", "D": "stainless steelclean"},
+{"A": "8479909596", "B": "锁紧器", "C": "Locking device", "D": "金属锁紧器"},
+{"A": "8481909060", "B": "淋浴阀", "C": "Shower accessories", "D": "铜/淋浴阀"},
+{"A": "8481909060", "B": "节气门体", "C": "throttle body", "D": "铁 iron用于发动机节气门体for engine throttle body"},
+{"A": "8481909060", "B": "曲柄", "C": "Crank", "D": "SteelAssembly parts"},
+{"A": "8481909085", "B": "节气门", "C": "Electronic throttle body", "D": "塑料 铝  汽车发动机用"},
+{"A": "8481909085", "B": "气门室盖", "C": "VALVE COVER", "D": "塑料/用于替换原车部件"},
+{"A": "8481909085", "B": "丙烷罐阀门适配器", "C": "adapter", "D": "金属     mental/用于丙烷罐阀门的适配器    Adapter for propane tank valve"},
+{"A": "8481909085", "B": "节气门底座", "C": "THROTTLE BRACKET", "D": "铝合金汽车用品"},
+{"A": "8486900000", "B": "金属盘", "C": "Metal disc", "D": "金属家用"},
+{"A": "8487900080", "B": "直线轨道", "C": "Linear Rail", "D": "ironnylon配件"},
+{"A": "8503009520", "B": "电机线圈", "C": "Motor coil", "D": "Aluminum, copper coil, plastic（铝, 铜线圈, 塑料）Generate alternating current, used to generate excitation magnetic field（产生交流电，用于产生励磁磁场）"},
+{"A": "8508700000", "B": "吸尘头", "C": "Vacuum head", "D": "塑料   plastic塑料/吸尘器Plastic/vacuum cleaner"},
+{"A": "8508700000", "B": "吸尘器配件地刷", "C": "brush head", "D": "plastic+iron工具用 tool"},
+{"A": "8508700000", "B": "集尘袋", "C": "dust bag", "D": "paper工具用 tool"},
+{"A": "8508700000", "B": "抽气机头", "C": "extractor head", "D": "plastic + stainless steel塑料+不锈钢污渍清洁Stain cleaning"},
+{"A": "8513902000", "B": "手电筒外壳", "C": "flashlights cover", "D": "金属 metal家用 Home use"},
+{"A": "8515902000", "B": "焊枪用电极", "C": "Welding accessories", "D": "98%钨+2%稀土氧化物氩弧焊接电极"},
+{"A": "8515902000", "B": "焊枪", "C": "WELDING TORCH", "D": "铜保护焊机的附属配件"},
+{"A": "8515902000", "B": "气刨枪", "C": "GOUGING TORCH", "D": "铜焊接"},
+{"A": "8515902000", "B": "焊把钳", "C": "electrode holder", "D": "铁/用以夹持和操纵"},
+{"A": "8515902000", "B": "焊枪用电极", "C": "Welding accessories", "D": "焊接工具氩弧焊接电极"},
+{"A": "8516905000", "B": "微波炉玻璃转盘", "C": "Microwave glass turntable", "D": "GLASS玻璃/微波炉配件Microwave accessories"},
+{"A": "8516908050", "B": "加热管", "C": "heating tube", "D": "铁合金(ironalloy)加热线圈（StoveHeatingcoil）"},
+{"A": "8516908050", "B": "空气炸锅篓子", "C": "Air fryer basket", "D": "304不锈钢配件"},
+{"A": "8517790000", "B": "印刷电路板", "C": "Printed Circuit Board", "D": "Metal 、plasticPrinted Circuit Board"},
+{"A": "8536908585", "B": "电源盒", "C": "Power Inlet box", "D": "METAL金属/BBQ, RV and Camping Needs（房车使用）"},
+{"A": "8536908585", "B": "汇流箱", "C": "Combiner box", "D": "塑料和金属Sink current汇集电流"},
+{"A": "8536908585", "B": "导电滑环", "C": "Slip Ring", "D": "Plastic 塑料For camera 用于摄像头"},
+{"A": "8536908585", "B": "母线", "C": "BUSBAR", "D": "铁链接"},
+{"A": "8536908585", "B": "开关箱", "C": "breaker box", "D": "Stainless steelindustrial product"},
+{"A": "8538100000", "B": "效果器外壳", "C": "Effector housing", "D": "铝合金Aluminumalloy效果器配件Effectaccessories"},
+{"A": "8543908885", "B": "音效控制器外壳", "C": "Sound controller enclosure", "D": "铝合金 ALUMINUM用于吉他效果器；USE FOR GUITAR PEDAL"},
+{"A": "8708103050", "B": "汽车保险杆", "C": "Car bumper", "D": "不锈钢（stainlesssteel）用于汽车安全系统(useforcarsafetysystem)"},
+{"A": "8708103050", "B": "防撞胶条", "C": "bumper lip", "D": "plastic塑料用于汽车安装配件（use for car parts installation)"},
+{"A": "8708106050", "B": "汽车前杠横杠", "C": "Automobile front bar cross bar", "D": "metal/金属汽车用"},
+{"A": "8708106050", "B": "保险杠塞子", "C": "Bumper plug", "D": "塑料家用"},
+{"A": "8708106050", "B": "保险杠塑料支架", "C": "front bumper plastic bracket", "D": "塑料plastic汽车更换维修Car replacement and maintenance"},
+{"A": "8708295160", "B": "反射板", "C": "Reflector Plates", "D": "Aluminum AlloyAuto parts"},
+{"A": "8708295160", "B": "仪表台垫", "C": "Instrument desk pad", "D": "布维修更换"},
+{"A": "8708295160", "B": "电动支撑杆", "C": "Power Lift Support", "D": "金属支撑"},
+{"A": "8708295160", "B": "汽车扶手箱盖", "C": "Car armrest box cover", "D": "plastic/塑料Cover for car armrest box/汽车扶手箱的盖子"},
+{"A": "8708295160", "B": "倒车镜盖", "C": " mirror cover", "D": "Aluminum alloy装饰"},
+{"A": "8708295160", "B": "汽车前侧窗遮阳", "C": "Car Front Side Window Sun", "D": "textile/纺织品shade/遮阳"},
+{"A": "8708295160", "B": "汽车排气面板", "C": "car exhaust panel", "D": "铝合金For Car Use"},
+{"A": "8708295160", "B": "杯托", "C": "CUP HOLDER", "D": "橡胶rubber汽车更换维修Car replacement and maintenance"},
+{"A": "8708295160", "B": "装饰盖板", "C": "decorative cover", "D": "ABS装饰盖板"},
+{"A": "8708295160", "B": "档位罩", "C": "Gear cover", "D": "橡胶+塑料汽车档位护罩"},
+{"A": "8708295160", "B": "高尔夫球车踏板", "C": "Golf cart pedals", "D": "铝汽配"},
+{"A": "8708295160", "B": "车窗百叶窗", "C": "CAR window shutters", "D": "PVC维修更换"},
+{"A": "8708295160", "B": "空气弹簧", "C": "Air spring", "D": "ABS塑料利用气体的压缩弹性实现弹簧的作用"},
+{"A": "8708295160", "B": "前垫高块", "C": "Front Leveling lift kit", "D": "金属垫高"},
+{"A": "8708295160", "B": "汽车中控储物盒", "C": "Car central control storage box", "D": "塑料汽车配件"},
+{"A": "8708295160", "B": "汽车装饰垫", "C": "Car decoration mat", "D": "纤维汽车配件"},
+{"A": "8708295160", "B": "扶手箱", "C": "Car armrest box", "D": "塑料扶手箱"},
+{"A": "8708295160", "B": "车壳", "C": "fairing kit", "D": "ABS车壳"},
+{"A": "8708806590", "B": "汽车减震器支架", "C": "Car shock absorber bracket", "D": "不锈钢（stainless steel）用于汽车减震器系统(use for car shock  system)"},
+{"A": "8708806590", "B": "摆臂", "C": "control arm", "D": "铜.铁.塑料/替换"},
+{"A": "8708806590", "B": "汽车减震器衬套", "C": "Car shock absorber bushing", "D": "不锈钢Use for Car shock system/用于汽车减震功能"},
+{"A": "8708806590", "B": "汽车减震块", "C": "Car shock absorber", "D": "不锈钢Use for Car shock system/用于汽车减震功能"},
+{"A": "8708806590", "B": "控制臂保险杠", "C": "Control Arm Bumper", "D": "铁，塑料汽车配件更换"},
+{"A": "8708806590", "B": "空气悬挂气囊", "C": "Air suspension airbag", "D": "橡胶维修更换"},
+{"A": "8708806590", "B": "平衡杆", "C": "sway bar", "D": "金属汽车平衡杆"},
+{"A": "8708806590", "B": "汽车悬挂配件", "C": "Automobile suspension fittings", "D": "金属汽车悬挂配件"},
+{"A": "8708806590", "B": "前摇杆", "C": "Car rocker", "D": "aluminum铝用于汽车安装配件（use for car parts installation)"},
+{"A": "8708806590", "B": "控制臂", "C": "control arm", "D": "铁汽车更换配件"},
+{"A": "8708996890", "B": "换挡手柄", "C": "Shift Knob", "D": "塑料/汽车配件"},
+{"A": "8708996890", "B": "汽车电机转轴", "C": "car motor shaft", "D": "不锈钢Use for Car turning system/用于汽车转向功能"},
+{"A": "8708996890", "B": "排挡杆", "C": "short shifter", "D": "aluminum铝用于汽车安装配件（use for car parts installation)"},
+{"A": "8708996890", "B": "汽车排挡头", "C": "gear shift knob", "D": "plastic/塑料shift/换挡"},
+{"A": "8708996890", "B": "调速杆", "C": "Tool handle", "D": "aluminium alloy 铝合金For wrench tools 用于维修自行车"},
+{"A": "8708996890", "B": "汽车自动变速器换档杆手柄换档旋钮带", "C": "Car Automatic Transmission Gear Stick Shifter Handle Shift Knob w", "D": "塑料汽车修理"},
+{"A": "9401999081", "B": "豆袋椅套", "C": "chair cover", "D": "亚麻装饰"},
+{"A": "9401999081", "B": "秋千绳", "C": "Swing Straps Hanging", "D": "尼龙秋千绳/nylon配件"},
+{"A": "9403200050", "B": "鞋架", "C": "Shoe rack", "D": "合成木/收纳"},
+{"A": "9403200050", "B": "浴室置物架", "C": "Shower Caddy", "D": "金属（metal）用于放置物品"},
+{"A": "9403200050", "B": "厨房置物架", "C": "kitchen shelf", "D": "碳钢/厨房置物/kitchen storage rack"},
+{"A": "9403200050", "B": "植物架", "C": "plant stand", "D": "铁/放置盆栽装饰"},
+{"A": "9403200050", "B": "衣帽架", "C": "Coat rack", "D": "铁/晾衣服"},
+{"A": "9403200050", "B": "纸巾架", "C": "Paper Holder", "D": "铁/置物"},
+{"A": "9403200050", "B": "铁制唱片收纳架", "C": "metal vinyl record rack", "D": "铁/metal收纳/storage"},
+{"A": "9403200050", "B": "晾衣架", "C": "CLOTHES HANGER", "D": "不锈钢晾晒"},
+{"A": "9403200050", "B": "不锈钢架", "C": "Shelf", "D": "不锈钢置物"},
+{"A": "9403200050", "B": "鞋架", "C": "Shoe rack", "D": "合成木/收纳"},
+{"A": "9403200050", "B": "浴室置物架", "C": "Shower Caddy", "D": "金属（metal）用于放置物品"},
+{"A": "9403200050", "B": "厨房置物架", "C": "kitchen shelf", "D": "碳钢/厨房置物/kitchen storage rack"},
+{"A": "9403200050", "B": "植物架", "C": "plant stand", "D": "铁/放置盆栽装饰"},
+{"A": "9403200050", "B": "衣帽架", "C": "Coat rack", "D": "铁/晾衣服"},
+{"A": "9403200050", "B": "纸巾架", "C": "Paper Holder", "D": "铁/置物"},
+{"A": "9403200050", "B": "铁制唱片收纳架", "C": "metal vinyl record rack", "D": "铁/metal收纳/storage"},
+{"A": "9403200050", "B": "晾衣架", "C": "CLOTHES HANGER", "D": "不锈钢晾晒"},
+{"A": "9403200050", "B": "不锈钢架", "C": "Shelf", "D": "不锈钢置物"},
+{"A": "9403200081", "B": "水桶架", "C": "Water Jug  Metal Rack", "D": "METAL金属/placewaterjug放置水桶"},
+{"A": "9403200090", "B": "水桶脚架", "C": "Bucket tripod", "D": "金属/储存水桶"},
+{"A": "9403200090", "B": "桌子", "C": "table", "D": "布/铁/木头家居用品"},
+{"A": "9403200090", "B": "折叠桌", "C": "folding table", "D": "尼龙   和五金（nylon hardware)/放置物品）place items）"},
+{"A": "9403200090", "B": "工作台", "C": "workbench", "D": "不锈钢不锈钢/置物"},
+{"A": "9403200090", "B": "花架", "C": "Flower stand", "D": "铁放花"},
+{"A": "9403200090", "B": "扶手架", "C": "Handrail frame", "D": "金属休息扶手"},
+{"A": "9403200090", "B": "眼镜架", "C": "STAND", "D": "铝塑板展示眼镜"},
+{"A": "9403200090", "B": "不锈钢工作台", "C": "STAINLESS STEEL TABLE", "D": "STAINLESS STEEL摆放物品"},
+{"A": "9403200090", "B": "灯架", "C": "Lamp holder", "D": "金属 Metal家居装饰 Home Decorations"},
+{"A": "9403200090", "B": "野餐桌子", "C": "Vehicle Table", "D": "铝放汽车轮胎上的野餐桌子"},
+{"A": "9403200090", "B": "遮阳篷", "C": "Mini Green House", "D": "steel+PVCMini Green House  Home plant awning"},
+{"A": "9403200090", "B": "杂志架", "C": "Magazine Holder", "D": "铁Iron办公"},
+{"A": "9403200090", "B": "手机存储柜", "C": "Storage cabinets", "D": "铝合金/Aluminum alloy存储"},
+{"A": "9405994090", "B": "户外灯具配件", "C": "Outdoor lighting accessories", "D": "金属/Hangingoutdoorlight悬挂户外灯"},
+{"A": "9405994090", "B": "底座", "C": "lampstand", "D": "金属装饰"},
+{"A": "9405994090", "B": "铁灯架", "C": "IRON LAMP STAND", "D": "不锈钢照明"},
+{"A": "9506594040", "B": "羽毛球拍", "C": "badminton racket", "D": "铝合金/Aluminum alloy运动娱乐Sports entertainment"},
+{"A": "9506910010", "B": "动感单车", "C": "spin bike", "D": "合金钢 Alloy steel家居"},
+{"A": "9506910030", "B": "T型杠排", "C": "T-bars", "D": "Metal/金属/健身"},
+{"A": "9506910030", "B": "健身阻力带", "C": "fitness resistance band", "D": "塑料 plastic/健身用 Fitness training"},
+{"A": "9506910030", "B": "健身器材", "C": "Fitness Equipment", "D": "钢/健身"},
+{"A": "9506910030", "B": "重球", "C": "ball weight", "D": "rubberSports"},
+{"A": "9506910030", "B": "普拉提棒黑色", "C": "Pilates rods", "D": "泡棉塑料钢管/FITNESS/健身"},
+{"A": "9506910030", "B": "V型手柄", "C": "V-handle", "D": "Metal/金属/健身"},
+{"A": "9506910030", "B": "健身把杆", "C": "Exercise bar", "D": "Metal健身设备"},
+{"A": "9506910030", "B": "健身拉杆", "C": "Exercise bar", "D": "Metal/金属/健身杆"},
+{"A": "9506910030", "B": "腰板", "C": "back stretcher", "D": "ABS塑料+NRB泡沫/腰靠"},
+{"A": "9506910030", "B": "9轮按摩器", "C": "9 rounds massager", "D": "PP/按摩"},
+{"A": "9506910030", "B": "挂环", "C": "link", "D": "stainless steel健身使用"},
+{"A": "9506910030", "B": "扭腰盘", "C": "Wriggled plate", "D": "PVC锻炼腰部力量"},
+{"A": "9506910030", "B": "仰卧起坐辅助器", "C": "sit up aid", "D": "STEEL健身"},
+{"A": "9506910030", "B": "翘臀圈", "C": "Hip booster", "D": "涤纶健身"},
+{"A": "9506910030", "B": "滑轮套装", "C": "Pulley set", "D": "aluminium alloyoutdoor climbing"},
+{"A": "9506910030", "B": "哑铃凳", "C": "DUMBBELL STOOL", "D": "钢管，PU皮，海绵/健身，运动"},
+{"A": "9506910030", "B": "举重床", "C": "Weight Bench", "D": "钢管，PU皮，海绵/健身，运动"},
+{"A": "9506910030", "B": "磁控车", "C": "magnetic bike", "D": "钢材/健身"},
+{"A": "9506910030", "B": "呼啦圈", "C": "hula hoop", "D": "塑料/健身"},
+{"A": "9506910030", "B": "登山机", "C": "Summit Trainers", "D": "钢材/健身"},
+{"A": "9506910030", "B": "俯卧撑板", "C": "push up board", "D": "塑料/锻炼"},
+{"A": "9506910030", "B": "48寸蹦床", "C": "Trampoline", "D": "不锈钢/Sport/运动"},
+{"A": "9506910030", "B": "骑马机", "C": "Horse Riding Machine", "D": "钢材/健身"},
+{"A": "9506910030", "B": "背部牵引器", "C": "Back retractor", "D": "PP+海绵条/PP+sponge strip背部按摩/Back massage"},
+{"A": "9506910030", "B": "臀带", "C": "Anal girdle", "D": "涤纶/健身训练"},
+{"A": "9506910030", "B": "瑜伽吊床", "C": "yoga swing", "D": "网布/家用"},
+{"A": "9506910030", "B": "健身手握力器", "C": "hand grip strengthener", "D": "塑料/健身"},
+{"A": "9506910030", "B": "拉伸训练器", "C": "Tension trainer", "D": "不锈钢管/健身、运动"},
+{"A": "9506910030", "B": "上拉杆", "C": "Pull-up Bar", "D": "钢，PVC健身"},
+{"A": "9506910030", "B": "瑜伽垫", "C": "YOGA MAT", "D": "橡胶健身"},
+{"A": "9506910030", "B": "ab滚轮", "C": "Ab Roller Wheel", "D": "塑料体育用品"},
+{"A": "9506910030", "B": "拉力圈", "C": "resistance band", "D": "TPR健身"},
+{"A": "9506910030", "B": "俯卧撑架", "C": "Push Up Rack Board", "D": "塑料plastic肌肉训练Muscle training"},
+{"A": "9506910030", "B": "乳胶阻力带", "C": "Latex resistance band", "D": "乳胶健身"},
+{"A": "9506910030", "B": "塑料滑行盘", "C": "Plastic slide disk", "D": "塑料健身"},
+{"A": "9506910030", "B": "(运动弹力带)", "C": "exercise bands", "D": "cotton，rubber其他健身"},
+{"A": "9506910030", "B": "瑜伽棒", "C": "Yoga stick", "D": "Silica gelfitness"},
+{"A": "9506910030", "B": "束腰带", "C": "waist trainer wrap", "D": "40%乳胶+60%涤纶健身"},
+{"A": "9506910030", "B": "充气体操垫", "C": "Inflatable gymnastics mat", "D": "PVC锻炼"},
+{"A": "9506910030", "B": "乳胶小阻力圈", "C": "Latex small resistance ring", "D": "乳胶健身"},
+{"A": "9506910030", "B": "体操带", "C": "Dance Ribbon", "D": "纤维fibrebusiness商业"},
+{"A": "9506910030", "B": "保护套装", "C": "Protective suit", "D": "ABS外壳+PP材质外壳穿着"},
+{"A": "9506910030", "B": "瑜伽柱", "C": "Massage roll", "D": "EVA健身用"},
+{"A": "9506910030", "B": "运动平衡板", "C": "Balance board", "D": "密度板,plastic，metal其他健身"},
+{"A": "9506910030", "B": "手握强化器", "C": "Hand held intensifier", "D": "塑料+不锈钢健身"},
+{"A": "9506910030", "B": "练臀器", "C": "Hip Thrust Machine", "D": "steel+Oka broad健身"},
+{"A": "9506910030", "B": "跳绳", "C": "Jump Rope", "D": "Plastic, Stell wire +Sponge健身"},
+{"A": "9506910030", "B": "拉背把手", "C": "fitness bar", "D": "STEEL+PVC健身"},
+{"A": "9506910030", "B": "拉力带", "C": "Stretch board", "D": "乳胶健身"},
+{"A": "9506910030", "B": "PVC球", "C": "PVC ball", "D": "PVCFitness"},
+{"A": "9506910030", "B": "调节器", "C": "ADJUSTER", "D": "金属Metal健身"},
+{"A": "9506910030", "B": "握把", "C": "grip", "D": "塑料健身"},
+{"A": "9506910030", "B": "负重背心", "C": "weighted vest", "D": "氯丁橡胶neoprene锻炼exercise"},
+{"A": "9506910030", "B": "瑜伽砖", "C": "YOGA BLOCK", "D": "EVA健身"},
+{"A": "9506910030", "B": "普拉提套装", "C": "Pilates Bar", "D": "塑料+铁健身"},
+{"A": "9506910030", "B": "起跑器", "C": "Starting blocks", "D": "铝Aluminum辅助跑步Assisted running"},
+{"A": "9506910030", "B": "手柄皮", "C": "Overgrip", "D": "PU体育用品"},
+{"A": "9506910030", "B": "运动护掌", "C": "Fitness Palm Grips", "D": "皮革运动健身用"},
+{"A": "9506910030", "B": "推杆握把", "C": "Putter Grip", "D": "橡胶握把 健身器材"},
+{"A": "9506910030", "B": "双弹簧美腿器", "C": "Double spring leg beautifying device", "D": "塑料日用"},
+{"A": "9506910030", "B": "健身套装", "C": "Resistance Fitness Bands", "D": "TPE健身"},
+{"A": "9506910030", "B": "腿夹", "C": "thigh master", "D": "塑料plastic家用"},
+{"A": "9506910030", "B": "肩垫", "C": "barbell pad", "D": "pvc装饰"},
+{"A": "9506910030", "B": "瑜伽轮", "C": "Cork Yoga ", "D": "ABSTraining Purpose"},
+{"A": "9506910030", "B": "智能跳绳", "C": "smart skip rope", "D": "塑料运动"},
+{"A": "9506910030", "B": "攀爬网", "C": "Climbing net", "D": "cloth家用"},
+{"A": "9506910030", "B": "无绳跳绳", "C": "Cordless Skipping Rope", "D": "PVC+EVA健身"},
+{"A": "9506910030", "B": "杠铃肩垫", "C": "BARBELL PAD", "D": "PVC家用household"},
+{"A": "9506910030", "B": "呼啦圈", "C": "Hula hoop", "D": "塑料plastic运动sport"},
+{"A": "9506910030", "B": "跆拳道护胸", "C": "Taekwondo Chest Guard", "D": "PUtraining"},
+{"A": "9506910030", "B": "俯卧撑板", "C": "push up board", "D": "ABS锻炼"},
+{"A": "9506910030", "B": "攀爬网", "C": "Climb the net", "D": "聚酯纤维体育用品"},
+{"A": "9506910030", "B": "一字马训练器", "C": "leg stretcher", "D": "钢拉伸腿部肌肉"},
+{"A": "9506910030", "B": "哑铃", "C": "80LB Adjustable dumbbell", "D": "ironMuscle training"},
+{"A": "9506910030", "B": "一字马训练器", "C": "split machine", "D": "钢拉伸腿部肌肉"},
+{"A": "9506910030", "B": "跑步机", "C": "Treadmill", "D": "铁合金无"},
+{"A": "9506910030", "B": "负重背心", "C": "weighted vest", "D": "polyester家用"},
+{"A": "9506910030", "B": "瑜伽垫", "C": "Yoga mat", "D": "NBR瑜伽用/yoga"},
+{"A": "9506910030", "B": "拳击靶", "C": "Boxing target", "D": "PVCFitness"},
+{"A": "9506910030", "B": "起跑器", "C": "Starting block", "D": "铝Aluminum辅助跑步Assisted running"},
+{"A": "9506910030", "B": "双面沙包", "C": "Double-sided sandbags", "D": "塑料 麻布体育用品"},
+{"A": "9506990520", "B": "鱼箭", "C": "Fish arrow", "D": "不锈钢+塑料/猎鱼"},
+{"A": "9506990530", "B": "箭靶", "C": "Archery Target", "D": "草织品 Grass weaving运动sports"},
+{"A": "9506990530", "B": "箭靶", "C": "Archery Target", "D": "草织品 Grass weaving运动sports"},
+{"A": "9506991500", "B": "棒球棒", "C": "Baseball Bat", "D": "合木家用"},
+{"A": "9506991500", "B": "木棍", "C": "baseball batag", "D": "合木运动"},
+{"A": "9506991500", "B": "棒球网", "C": "baseball net", "D": "Metal/Fabric运动产品"},
+{"A": "9506995500", "B": "宠物泳池", "C": "Pet pool", "D": "PVC/Petswimming"},
+{"A": "9506995500", "B": "泳池清洁器维修套件", "C": "Pool Cleaner Replacements kit", "D": "ABS/塑料/维修泳池清洁器Replacements Pool Cleaner"},
+{"A": "9506995500", "B": "塑料泳池配件(投药器等)", "C": "Swimming Pool Accessories", "D": "塑料ABS/用于泳池清洁消毒  Used for swimming pool cleaning and disinfection"},
+{"A": "9506995500", "B": "给料机", "C": "feeder", "D": "塑料(plastic泳池投放器（Bromine Feeder）"},
+{"A": "9506995500", "B": "泳池捞叶网", "C": "pool leaf rake", "D": "塑料装饰"},
+{"A": "9506995500", "B": "大吸盘", "C": "Big sucker", "D": "塑料/泳池清洁"},
+{"A": "9506995500", "B": "泳池盖布", "C": "Pool Cover", "D": "涤纶配件"},
+{"A": "9506995500", "B": "泳池清洁机器人", "C": "POOL CLEANING ROBOT", "D": "ABS塑料清洁"},
+{"A": "9506995500", "B": "充气游泳池", "C": "Inflatable Swimming Pool", "D": "PVC游泳"},
+{"A": "9506995500", "B": "梯子", "C": "Ladders", "D": "铝，塑料户外"},
+{"A": "9506995500", "B": "水下清洁机器人", "C": "underwater cleaning robot", "D": "PE清洁"},
+{"A": "9506995500", "B": "泳池固定器", "C": "Pool retainer", "D": "塑料泳池固定器"},
+{"A": "9506996080", "B": "护膝CAK", "C": "KNEEPAD", "D": "塑料+布料Plastic+cloth/护膝"},
+{"A": "9506996080", "B": "滑板", "C": "skateboard", "D": "枫木/娱乐"},
+{"A": "9506996080", "B": "秋千", "C": "swing", "D": "铁、不锈钢、EVA/娱乐"},
+{"A": "9506996080", "B": "记分牌", "C": "scoreboard", "D": "plastic/ Sports"},
+{"A": "9506996080", "B": "攀岩辅绳", "C": "accessory cord", "D": "polyester涤纶纤维outdoor climbing"},
+{"A": "9506996080", "B": "牛角八", "C": "Rhizoma dioscoreae", "D": "aluminium alloy铝合金outdoor climbing"},
+{"A": "9506996080", "B": "攀爬绳", "C": "climbing ropes", "D": "铜，塑料HOME"},
+{"A": "9506996080", "B": "护胫", "C": "shin guards", "D": "软胶穿戴"},
+{"A": "9506996080", "B": "摩托车护甲", "C": "Motorcycle Armor", "D": "聚丙烯polypropylene生活用品daily necessities"},
+{"A": "9506996080", "B": "攀岩主锁套装", "C": "Rock climbinr lock kit", "D": "aluminium alloy铝合金outdoor climbing"},
+{"A": "9506996080", "B": "护臂", "C": "arm guard", "D": "leatherarm  protect"},
+{"A": "9506996080", "B": "攀岩织带", "C": "climbing webbing", "D": "nylon尼龙outdoor climbing"},
+{"A": "9506996080", "B": "弹跳球", "C": "Out door game set", "D": "Metal/Fabric运动产品"},
+{"A": "9506996080", "B": "槌球", "C": "Croquet Set", "D": "合木户外运动"},
+{"A": "9506996080", "B": "滑板板面", "C": "SKATEBOARD DECK", "D": "maplesskate"},
+{"A": "9506996080", "B": "游乐设备", "C": "Playground Equipment", "D": "PVC+海绵+胶合板配合游乐设备使用"},
+{"A": "9506996080", "B": "举重腰带", "C": "Weight Lifting Belts", "D": "超纤Microfiber健身配件Fitness Accessories"},
+{"A": "9506996080", "B": "抛接球", "C": "Toss and catch game sets", "D": "塑料运动"},
+{"A": "9507906000", "B": "渔网", "C": "fishing net", "D": "nylon 尼龙/宠物"},
+{"A": "9507906000", "B": "折叠抄网", "C": "Folding net", "D": "捕鱼铝合金框架+橡胶网"},
+{"A": "9507906000", "B": "捞网", "C": "sweep net", "D": "Plastic塑料Insect catching捕虫"},
+{"A": "9507906000", "B": "抄网", "C": "fishing landing net", "D": "铁户外用品"},
+{"A": "9603908050", "B": "马桶刷", "C": "toilet brush", "D": "不锈钢/stainless steel家居建材/Home&Kitchen"},
+{"A": "9603908050", "B": "画笔套装", "C": "brush", "D": "木 Wooden蛋糕装饰 Cake Decorating"},
+{"A": "9603908050", "B": "宠物刷", "C": "Pet brush", "D": "PP/宠物梳毛工具"},
+{"A": "9603908050", "B": "清洁刷", "C": "squeegee", "D": "POM聚甲醛/Cleanchimney清洁烟囱"},
+{"A": "9603908050", "B": "黑色枪刷", "C": "Black gun brush", "D": "不锈钢/清洁"},
+{"A": "9603908050", "B": "刷子", "C": "BRUSH", "D": "塑料洗涮"},
+{"A": "9603908050", "B": "扫把", "C": "brooms", "D": "plastic塑料/cleaning floor 清洁"},
+{"A": "9603908050", "B": "拖把", "C": "MOP", "D": "塑料，不锈钢/手工操作地板清扫器、拖把"},
+{"A": "9603908050", "B": "刮水扫把", "C": "A wiper broom", "D": "不锈钢/清洁"},
+{"A": "9603908050", "B": "塑料刷子", "C": "brush", "D": "塑料 五金/用于清洁除锈等"},
+{"A": "9603908050", "B": "擦窗器", "C": "SQUEEGEE", "D": "不锈钢/清洁"},
+{"A": "9603908050", "B": "毛刷", "C": "Brush", "D": "塑料刷"},
+{"A": "9603908050", "B": "鼓刷", "C": "drum brush", "D": "金属/日用品"},
+{"A": "9603908050", "B": "刷子", "C": "brush", "D": "plastic清洁"},
+{"A": "9603908050", "B": "水刮器", "C": "Shower Squeegee", "D": "不锈钢家居"},
+{"A": "9603908050", "B": "除雪铲", "C": "Snow shovel", "D": "塑料ppcamazon卖"},
+{"A": "9603908050", "B": "宠物去毛刷", "C": "cutter", "D": "plastic+ironFor pet"},
+{"A": "9603908050", "B": "宠物撸毛手套", "C": "Pet fur gloves", "D": "塑料宠物专用"},
+{"A": "9603908050", "B": "厨房清洁刷", "C": "Kitchen cleaning brush", "D": "合木家用"},
+{"A": "9603908050", "B": "silcome油瓶啤酒", "C": "silcome oilbottle beush", "D": "塑料装"},
+{"A": "9603908050", "B": "洗碗刷", "C": "Dish Brush", "D": "塑料，plastic洗碗刷，Dish Brush"},
+{"A": "9603908050", "B": "清洁套装", "C": "Cleaning Kit", "D": "超细纤维/Microfiber家用"},
+{"A": "9603908050", "B": "瓶刷", "C": "Bottle brush", "D": "尼龙+不锈钢kitchen   厨房"},
+{"A": "9603908050", "B": "拖把头", "C": "MOP HEAD", "D": "涤纶/清洁地面"},
+{"A": "9603908050", "B": "浴室工具", "C": "bath tool", "D": "塑料ABS浴室用品"},
+{"A": "9603908050", "B": "不锈钢刷", "C": "Stainless steel brush", "D": "stainless steel/aluminium alloy/plastic /stainless steelStainless steel brush/pliers/Chute use/air charge temperature sensor /air charge temperature sensor /Gasket for exhaust pipe flange/Gasket for exhaust pipe flange"},
+{"A": "9603908050", "B": "弹簧刷", "C": "Spring brush", "D": "尼龙+不锈钢kitchen   厨房"},
+{"A": "9603908050", "B": "衣刷", "C": "Clothes brush", "D": "塑料清洁"},
+{"A": "9603908050", "B": "刷子", "C": "brush", "D": "PVC家用"},
+{"A": "9603908050", "B": "宠物洗护用品", "C": "PET CARE products", "D": "plastic/塑料for pet cleaning/宠物清洗用"},
+{"A": "9603908050", "B": "掸子", "C": "Duster for clean", "D": "超细纤维家庭清洁"},
+{"A": "9603908050", "B": "擦洗刷", "C": "Scrub brush", "D": "塑料/plastic清洁/clean"},
+{"A": "9603908050", "B": "擦背刷", "C": "Back Brush", "D": "铝手柄+ABS+乳胶（橡胶）/家用"},
+{"A": "9603908050", "B": "毛条", "C": "Wool top", "D": "塑料+涤纶手串DIY"},
+{"A": "9603908050", "B": "洗车刷", "C": "car wash brush", "D": "塑料洗车用品"},
+{"A": "9603908050", "B": "汽车清洁套件", "C": "Car cleaning kit", "D": "钢丝刷+纤维/steel wire+microfiber清洁"},
+{"A": "9603908050", "B": "钢丝刷", "C": "METAL BRUSH", "D": "钢丝家用"},
+{"A": "9603908050", "B": "淋浴清洁刷", "C": "Shower Cleaning Brush", "D": "Stainless SteelCleaning the bathroom, etc."},
+{"A": "9603908050", "B": "地刷头", "C": "Floor brush head", "D": "塑料家用"},
+{"A": "9603908050", "B": "鸡毛扫", "C": "Feather brush", "D": "布扫灰尘"},
+{"A": "9603908050", "B": "除毛器", "C": "Hair remover", "D": "合木除毛用"},
+{"A": "9603908050", "B": "收边器", "C": "Trim Paint Edger", "D": "塑料墙角收边"},
+{"A": "9603908050", "B": "画笔套装", "C": "brush", "D": "木 Wooden蛋糕装饰 Cake Decorating"},
+{"A": "9603908050", "B": "刮水扫把", "C": "A wiper broom", "D": "不锈钢/清洁"}
+];
 
-            <form class="row" id="greet-form">
-                <input id="greet-input" placeholder="Enter a name..." />
-                <button type="submit">Greet</button>
-            </form>
-            <p id="greet-msg"></p>
-        </main>
-    </body>
+        const searchInput = document.getElementById('searchInput');
+        const resultsDiv = document.getElementById('results');
+
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            resultsDiv.innerHTML = '';
+
+            if (query === '') return;
+
+            const filteredData = tableData.filter(row => 
+                row.A.toLowerCase().includes(query) || 
+                row.B.toLowerCase().includes(query) || 
+                row.C.toLowerCase().includes(query)
+            );
+
+            filteredData.forEach(row => {
+                const div = document.createElement('div');
+                div.className = 'result-item';
+
+                function highlightText(text, query) {
+                    const regex = new RegExp(`(${query})`, 'gi');
+                    return text.replace(regex, '<span class="highlight">$1</span>');
+                }
+
+                const highlightedA = highlightText(row.A, query);
+                const highlightedB = highlightText(row.B, query);
+                const highlightedC = highlightText(row.C, query);
+                const originalD = row.D;
+
+                div.innerHTML = `
+                    <div class="result-row"><strong>HS:</strong> <span>${highlightedA}</span></div>
+                    <div class="result-row"><strong>品名:</strong> <span>${highlightedB}</span></div>
+                    <div class="result-row"><strong>英文:</strong> <span>${highlightedC}</span></div>
+                    <div class="result-row"><strong>材质:</strong> <span>${originalD}</span></div>
+                    <button class="copy-btn">复制全部</button>
+                `;
+
+                div.addEventListener('click', (e) => {
+                    if (e.target.tagName !== 'SPAN' && e.target.tagName !== 'BUTTON') {
+                        copyToClipboard(`HS: ${row.A}\n品名: ${row.B}\n英文: ${row.C}\n材质: ${row.D}`, div);
+                    }
+                });
+
+                div.querySelectorAll('span').forEach((span, index) => {
+                    span.addEventListener('click', () => {
+                        const labels = ['HS', '品名', '英文', '材质'];
+                        const values = [row.A, row.B, row.C, row.D];
+                        copyToClipboard(`${labels[index]}: ${values[index]}`, span);
+                    });
+                });
+
+                const copyBtn = div.querySelector('.copy-btn');
+                copyBtn.addEventListener('click', () => {
+                    copyToClipboard(`HS: ${row.A}\n品名: ${row.B}\n英文: ${row.C}\n材质: ${row.D}`, copyBtn);
+                });
+
+                resultsDiv.appendChild(div);
+            });
+        });
+
+        function copyToClipboard(text, element) {
+            navigator.clipboard.writeText(text).then(() => {
+                element.classList.add('copied');
+                setTimeout(() => {
+                    element.classList.remove('copied');
+                }, 1000);
+            });
+        }
+    </script>
+</body>
 </html>
