@@ -1,22 +1,969 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <link rel="stylesheet" href="styles.css" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus App</title>
-        <script type="module" src="/main.js" defer></script>
-    </head>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>前端报价</title>
+    <!-- 引入 Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Inter 字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Background color */
+            color: #333; /* Default font color */
+        }
+        /* Main container style */
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Shadow effect */
+        }
+        /* Input group style */
+        .input-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #4a5568; /* Label font color */
+        }
+        .input-group input, .input-group select {
+            border: 1px solid #cbd5e0; /* Border */
+            border-radius: 8px; /* Rounded corners */
+            padding: 10px 15px;
+            font-size: 1rem;
+            width: 100%;
+            transition: border-color 0.2s; /* Transition effect */
+        }
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #4299e1; /* Focus border color */
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5); /* Focus shadow */
+        }
+        /* Make readonly inputs look distinct */
+        .input-group input[readonly] {
+            background-color: #e2e8f0; /* Lighter background for readonly */
+            cursor: not-allowed;
+            color: #718096;
+        }
+        /* Button style */
+        .button {
+            background-color: #4299e1; /* Button background color */
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s; /* Animation effect */
+            box-shadow: 0 4px 10px rgba(66, 153, 225, 0.3); /* Button shadow */
+        }
+        .button:hover {
+            background-color: #3182ce; /* Hover background color */
+            transform: translateY(-1px); /* Move up slightly */
+        }
+        .button:active {
+            transform: translateY(0); /* Reset on click */
+            box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3); /* Shadow change on click */
+        }
+        /* Result display box style */
+        .result-box {
+            background-color: #edf2f7; /* Background color */
+            border-radius: 8px;
+            padding: 20px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #2d3748;
+            text-align: center;
+        }
+        /* Settings section separator */
+        .settings-section {
+            border-top: 1px solid #e2e8f0;
+            padding-top: 30px;
+            margin-top: 40px;
+        }
+        /* Settings grid layout */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        /* Custom message box style */
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            z-index: 1000; /* Ensure on top */
+            min-width: 300px;
+            text-align: center;
+        }
+        /* Overlay style */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+            z-index: 999; /* Below message box */
+        }
+    </style>
+</head>
+<body class="p-4">
+    <!-- Price calculator main interface -->
+    <div id="price-calculator" class="container">
+        <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">前端报价</h1>
 
-    <body>
-        <main class="container">
-            <h1>Welcome to PakePlus</h1>
+        <div class="mb-8">
+            <!-- Channel selections row (First Row) -->
+            <!-- This grid will contain primary and optionally secondary channel dropdowns -->
+            <div id="main-channel-inputs-wrapper" class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                <!-- Primary Channel dropdown -->
+                <!-- sm:col-span-2 for centering when single, sm:col-span-1 when twin -->
+                <div id="main-primary-channel-wrap" class="input-group flex flex-col sm:col-span-2">
+                    <label for="main-channel-select" class="mb-2">选择渠道:</label>
+                    <select id="main-channel-select" class="p-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">
+                        <!-- Channel options will be dynamically populated by JavaScript -->
+                    </select>
+                </div>
+                <!-- Secondary Channel dropdown (smoothly transitions) -->
+                <!-- sm:col-span-1 when twin, initially hidden with opacity and max-height -->
+                <div id="main-sub-channel-group" class="input-group flex flex-col sm:col-span-1 transition-all duration-300 ease-in-out opacity-0 max-h-0 overflow-hidden">
+                    <label for="main-sub-channel-select" class="mb-2">选择子渠道:</label>
+                    <select id="main-sub-channel-select" class="p-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">
+                        <!-- Sub-channel options will be dynamically populated by JavaScript -->
+                    </select>
+                </div>
+            </div>
 
-            <form class="row" id="greet-form">
-                <input id="greet-input" placeholder="Enter a name..." />
-                <button type="submit">Greet</button>
-            </form>
-            <p id="greet-msg"></p>
-        </main>
-    </body>
+            <!-- Volume and Weight row (Second Row) -->
+            <!-- This grid will contain volume and chargeable weight inputs -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Volume input -->
+                <div class="input-group flex flex-col">
+                    <label for="volume-input" class="mb-2">方量 (CBM):</label>
+                    <input type="number" id="volume-input" placeholder="输入方量" step="0.01" class="p-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <!-- Weight input (formerly Chargeable Weight) -->
+                <div class="input-group flex flex-col">
+                    <label for="chargeable-weight-input" class="mb-2">重量 (KG):</label>
+                    <input type="number" id="chargeable-weight-input" placeholder="输入重量" step="0.01" class="p-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+        </div>
+
+        <!-- Calculate button -->
+        <button id="calculate-button" class="button w-full mb-8">计算价格</button>
+
+        <!-- Result display area -->
+        <div class="result-box" id="result-display">
+            前端价格(未包含末端派送)价格: 0.00 RMB
+        </div>
+
+        <!-- Settings access area -->
+        <div class="settings-section mt-10 pt-6 border-t border-gray-200">
+            <h2 class="text-xl font-bold text-center mb-4 text-gray-700">设置</h2>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <input type="password" id="settings-access-password" placeholder="输入密码访问设置" class="p-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 flex-grow">
+                <button id="access-settings-button" class="button w-full sm:w-auto">访问设置</button>
+                <!-- File Import/Export Buttons - Now subtly integrated -->
+                <button id="import-settings-button" class="button w-full sm:w-auto bg-purple-500 hover:bg-purple-600">导入</button>
+                <button id="export-settings-button" class="button w-full sm:w-auto bg-green-500 hover:bg-green-600">导出</button>
+                <input type="file" id="import-file-input" accept=".json" class="hidden">
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings interface (initially hidden) -->
+    <div id="settings-panel" class="container mt-8 hidden">
+        <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">设置面板</h1>
+
+        <!-- Channel selection in settings panel -->
+        <div class="mb-8">
+            <div id="settings-channel-inputs-wrapper" class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                <div id="settings-primary-channel-wrap" class="input-group flex flex-col sm:col-span-2">
+                    <label for="settings-channel-select" class="mb-2">选择渠道 (设置):</label>
+                    <select id="settings-channel-select" class="p-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">
+                        <!-- Channel options will be dynamically populated by JavaScript -->
+                    </select>
+                </div>
+                <div id="settings-sub-channel-group" class="input-group flex flex-col sm:col-span-1 transition-all duration-300 ease-in-out opacity-0 max-h-0 overflow-hidden">
+                    <label for="settings-sub-channel-select" class="mb-2">选择子渠道 (设置):</label>
+                    <select id="settings-sub-channel-select" class="p-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">
+                        <!-- Sub-channel options will be dynamically populated by JavaScript -->
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-grid mb-8">
+            <!-- Settings input fields -->
+            <div class="input-group flex flex-col">
+                <label for="sea-freight-usd">海运美金 (USD):</label>
+                <input type="number" id="sea-freight-usd" step="0.01" value="0.00" class="p-3 rounded-lg border border-gray-300">
+            </div>
+            <div class="input-group flex flex-col">
+                <label for="sea-misc-rmb">海运杂费RMB (RMB):</label>
+                <input type="number" id="sea-misc-rmb" step="0.01" value="0.00" class="p-3 rounded-lg border border-gray-300">
+            </div>
+            <div class="input-group flex flex-col">
+                <label for="trucking-rmb">拖车费RMB (RMB):</label>
+                <input type="number" id="trucking-rmb" step="0.01" value="0.00" class="p-3 rounded-lg border border-gray-300">
+            </div>
+            <div class="input-group flex flex-col">
+                <label for="customs-clearance-usd">清关费美金 (USD):</label>
+                <input type="number" id="customs-clearance-usd" step="0.01" value="0.00" class="p-3 rounded-lg border border-gray-300">
+            </div>
+            <div class="input-group flex flex-col">
+                <label for="duty-usd">关税美金 (USD):</label>
+                <input type="number" id="duty-usd" step="0.01" value="0.00" class="p-3 rounded-lg border border-gray-300">
+            </div>
+            <div class="input-group flex flex-col">
+                <label for="pickup-devanning-usd">提拆美金 (USD):</label>
+                <input type="number" id="pickup-devanning-usd" step="0.01" value="0.00" class="p-3 rounded-lg border border-gray-300">
+            </div>
+            <div class="input-group flex flex-col">
+                <label for="exchange-rate">汇率:</label>
+                <input type="number" id="exchange-rate" step="0.0001" value="7.2" class="p-3 rounded-lg border border-gray-300">
+            </div>
+            <div class="input-group flex flex-col">
+                <label for="fcl-cost">整柜成本 (RMB):</label>
+                <!-- This field will be read-only and calculated -->
+                <input type="number" id="fcl-cost" step="0.01" value="0.00" readonly class="p-3 rounded-lg border border-gray-300">
+            </div>
+            <div class="input-group flex flex-col">
+                <label for="cost-per-cbm-additional">每方成本 (RMB/CBM):</label>
+                <!-- This field will be read-only and calculated -->
+                <input type="number" id="cost-per-cbm-additional" step="0.01" value="0.00" readonly class="p-3 rounded-lg border border-gray-300">
+            </div>
+        </div>
+
+        <!-- Password Change Section -->
+        <div class="settings-section mt-10 pt-6 border-t border-gray-200">
+            <h2 class="text-xl font-bold text-center mb-4 text-gray-700">修改密码</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-4">
+                <div class="input-group flex flex-col">
+                    <label for="old-password">旧密码:</label>
+                    <input type="password" id="old-password" placeholder="输入旧密码" class="p-3 rounded-lg border border-gray-300">
+                </div>
+                <div class="input-group flex flex-col">
+                    <label for="new-password">新密码:</label>
+                    <input type="password" id="new-password" placeholder="输入新密码" class="p-3 rounded-lg border border-gray-300">
+                </div>
+            </div>
+            <button id="change-password-button" class="button w-full">确认修改密码</button>
+        </div>
+        <!-- End Password Change Section -->
+
+        <!-- Save settings button -->
+        <button id="save-settings-button" class="button w-full mt-8 mb-4">保存设置</button>
+        <!-- Back to calculator button -->
+        <button id="back-to-calculator-button" class="button bg-gray-500 hover:bg-gray-600 w-full">返回计算器</button>
+    </div>
+
+    <script>
+        // Channel pricing data, structured to support primary and secondary channels
+        const channelPricingData = [
+            { channel: '正班', per_kg_rate: 20, per_cbm_rate: 400, min_charge: 150 },
+            { channel: '加班', per_kg_rate: 22, per_cbm_rate: 450, min_charge: 160 },
+            { channel: 'Exx', per_kg_rate: 18, per_cbm_rate: 380, min_charge: 140 },
+            {
+                channel: '华东普船',
+                subChannels: [
+                    { channel: '华东普船', per_kg_rate: 15, per_cbm_rate: 300, min_charge: 100 },
+                    { channel: '华东OA普船', per_kg_rate: 16, per_cbm_rate: 320, min_charge: 110 }
+                ]
+            },
+            {
+                channel: '华南普船',
+                subChannels: [
+                    { channel: '华南普船', per_kg_rate: 14, per_cbm_rate: 280, min_charge: 90 },
+                    { channel: '华南OA普船', per_kg_rate: 15, per_cbm_rate: 300, min_charge: 100 }
+                ]
+            },
+            {
+                channel: '深圳盐田ZIM',
+                subChannels: [
+                    { channel: 'ZIM', per_kg_rate: 25, per_cbm_rate: 500, min_charge: 180 },
+                    { channel: '合德', per_kg_rate: 23, per_cbm_rate: 480, min_charge: 170 }
+                ]
+            },
+            {
+                channel: '直达船',
+                subChannels: [
+                    { channel: '休斯顿', per_kg_rate: 28, per_cbm_rate: 550, min_charge: 200 },
+                    { channel: '萨凡纳', per_kg_rate: 29, per_cbm_rate: 580, min_charge: 210 },
+                    { channel: '纽约', per_kg_rate: 30, per_cbm_rate: 600, min_charge: 220 },
+                    { channel: '芝加哥', per_kg_rate: 32, per_cbm_rate: 620, min_charge: 230 },
+                    { channel: '奥克兰', per_kg_rate: 27, per_cbm_rate: 530, min_charge: 190 }
+                ]
+            }
+        ];
+
+        // Default individual channel settings structure
+        const defaultChannelSettings = {
+            seaFreightUSD: 0.00,
+            seaMiscRMB: 0.00,
+            truckingRMB: 0.00,
+            customsClearanceUSD: 0.00,
+            dutyUSD: 0.00,
+            pickupDevanningUSD: 0.00,
+            exchangeRate: 7.2,
+            fclCost: 0.00, // This will be calculated
+            costPerCBMAdditional: 0.00 // This will be calculated
+        };
+
+        // All channel settings, keyed by channelName or channelName_subChannelName
+        let allChannelSettings = {};
+
+        // App-level password
+        let appPassword = '123';
+
+        // Get DOM elements for main calculator
+        const mainChannelSelect = document.getElementById('main-channel-select');
+        const mainSubChannelGroup = document.getElementById('main-sub-channel-group');
+        const mainSubChannelSelect = document.getElementById('main-sub-channel-select');
+        const mainPrimaryChannelWrap = document.getElementById('main-primary-channel-wrap');
+        const volumeInput = document.getElementById('volume-input');
+        const chargeableWeightInput = document.getElementById('chargeable-weight-input'); // Renamed to actualWeight in context
+        const calculateButton = document.getElementById('calculate-button');
+        const resultDisplay = document.getElementById('result-display');
+        const settingsAccessPasswordInput = document.getElementById('settings-access-password');
+        const accessSettingsButton = document.getElementById('access-settings-button');
+        const priceCalculatorDiv = document.getElementById('price-calculator');
+        const settingsPanelDiv = document.getElementById('settings-panel');
+
+        // Get DOM elements for settings panel
+        const settingsChannelSelect = document.getElementById('settings-channel-select');
+        const settingsSubChannelGroup = document.getElementById('settings-sub-channel-group');
+        const settingsSubChannelSelect = document.getElementById('settings-sub-channel-select');
+        const settingsPrimaryChannelWrap = document.getElementById('settings-primary-channel-wrap');
+
+        const saveSettingsButton = document.getElementById('save-settings-button');
+        const backToCalculatorButton = document.getElementById('back-to-calculator-button');
+
+        // New password change elements
+        const oldPasswordInput = document.getElementById('old-password');
+        const newPasswordInput = document.getElementById('new-password');
+        const changePasswordButton = document.getElementById('change-password-button');
+
+        // File import/export elements (now on main page, in settings-section)
+        const exportSettingsButton = document.getElementById('export-settings-button'); // Renamed ID
+        const importSettingsButton = document.getElementById('import-settings-button'); // Renamed ID
+        const importFileInput = document.getElementById('import-file-input');
+
+        // Get all input fields in the settings interface (for saving/loading)
+        const settingsInputElements = {
+            seaFreightUSD: document.getElementById('sea-freight-usd'),
+            seaMiscRMB: document.getElementById('sea-misc-rmb'),
+            truckingRMB: document.getElementById('trucking-rmb'),
+            customsClearanceUSD: document.getElementById('customs-clearance-usd'),
+            dutyUSD: document.getElementById('duty-usd'),
+            pickupDevanningUSD: document.getElementById('pickup-devanning-usd'),
+            exchangeRate: document.getElementById('exchange-rate'),
+            fclCost: document.getElementById('fcl-cost'), // This will be readonly
+            costPerCBMAdditional: document.getElementById('cost-per-cbm-additional') // This will be readonly
+        };
+
+        // --- Utility Functions for Encryption/Decryption ---
+        const TEXT_ENCODER = new TextEncoder();
+        const TEXT_DECODER = new TextDecoder();
+        const ALGORITHM_NAME = 'AES-GCM';
+        const KEY_LENGTH = 256;
+        const IV_LENGTH = 12; // AES-GCM recommended IV length
+        const SALT_LENGTH = 16;
+        const ITERATIONS = 100000; // Iterations for PBKDF2
+
+        /**
+         * Converts a string to a Base64 encoded string.
+         * @param {Uint8Array} bytes - The byte array to encode.
+         * @returns {string} Base664 encoded string.
+         */
+        function arrayBufferToBase64(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            const len = bytes.byteLength;
+            for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary);
+        }
+
+        /**
+         * Converts a Base64 encoded string to a Uint8Array.
+         * @param {string} base64 - The Base64 string to decode.
+         * @returns {Uint8Array} Decoded byte array.
+         */
+        function base64ToArrayBuffer(base64) {
+            const binary_string = window.atob(base64);
+            const len = binary_string.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binary_string.charCodeAt(i);
+            }
+            return bytes;
+        }
+
+        /**
+         * Derives a cryptographic key from a password and salt using PBKDF2.
+         * @param {string} password - The password string.
+         * @param {Uint8Array} salt - The salt byte array.
+         * @returns {Promise<CryptoKey>} A promise that resolves with the derived CryptoKey.
+         */
+        async function deriveKey(password, salt) {
+            const passwordKey = await crypto.subtle.importKey(
+                'raw',
+                TEXT_ENCODER.encode(password),
+                { name: 'PBKDF2' },
+                false,
+                ['deriveBits', 'deriveKey']
+            );
+
+            return crypto.subtle.deriveKey(
+                {
+                    name: 'PBKDF2',
+                    salt: salt,
+                    iterations: ITERATIONS,
+                    hash: 'SHA-256',
+                },
+                passwordKey,
+                { name: ALGORITHM_NAME, length: KEY_LENGTH },
+                true,
+                ['encrypt', 'decrypt']
+            );
+        }
+
+        /**
+         * Encrypts data using AES-GCM.
+         * @param {string} data - The data string to encrypt.
+         * @param {string} password - The password for key derivation.
+         * @returns {Promise<Object>} A promise resolving to an object with encrypted data, IV, and salt (all Base64 encoded).
+         */
+        async function encryptData(data, password) {
+            const salt = crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
+            const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
+            const key = await deriveKey(password, salt);
+
+            const encrypted = await crypto.subtle.encrypt(
+                { name: ALGORITHM_NAME, iv: iv },
+                key,
+                TEXT_ENCODER.encode(data)
+            );
+
+            return {
+                encryptedData: arrayBufferToBase64(encrypted),
+                iv: arrayBufferToBase64(iv),
+                salt: arrayBufferToBase64(salt),
+            };
+        }
+
+        /**
+         * Decrypts data using AES-GCM.
+         * @param {Object} encryptedBundle - An object containing encryptedData, IV, and salt (all Base64 encoded).
+         * @param {string} password - The password for key derivation.
+         * @returns {Promise<string>} A promise resolving to the decrypted data string.
+         */
+        async function decryptData(encryptedBundle, password) {
+            const salt = base64ToArrayBuffer(encryptedBundle.salt);
+            const iv = base64ToArrayBuffer(encryptedBundle.iv);
+            const encryptedData = base64ToArrayBuffer(encryptedBundle.encryptedData);
+            const key = await deriveKey(password, salt);
+
+            try {
+                const decrypted = await crypto.subtle.decrypt(
+                    { name: ALGORITHM_NAME, iv: iv },
+                    key,
+                    encryptedData
+                );
+                return TEXT_DECODER.decode(decrypted);
+            } catch (e) {
+                console.error("解密失败:", e);
+                throw new Error("解密失败，可能是密码不正确或文件已损坏。");
+            }
+        }
+
+        /**
+         * Displays a custom message box, replacing alert().
+         * @param {string} message - The message to display.
+         * @param {string} type - Message type ('info', 'success', 'error') for styling.
+         */
+        function showMessage(message, type = 'info') {
+            // Remove existing message box and overlay to prevent duplication
+            const existingMessageBox = document.querySelector('.message-box');
+            if (existingMessageBox) {
+                existingMessageBox.remove();
+            }
+            const existingOverlay = document.querySelector('.overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+
+            // Create and add overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'overlay';
+            document.body.appendChild(overlay);
+
+            // Create message box
+            const messageBox = document.createElement('div');
+            messageBox.className = 'message-box';
+            messageBox.innerHTML = `
+                <p class="text-lg font-semibold mb-4">${message}</p>
+                <button class="button px-6 py-2" onclick="this.parentNode.previousSibling.remove(); this.parentNode.remove();">确定</button>
+            `;
+            // Add styling based on message type
+            if (type === 'error') {
+                messageBox.querySelector('p').classList.add('text-red-600');
+            } else if (type === 'success') {
+                messageBox.querySelector('p').classList.add('text-green-600');
+            }
+            // Append message box to body
+            document.body.appendChild(messageBox);
+        }
+
+        /**
+         * Generates a unique key for channel settings based on primary and sub-channel.
+         * @param {string} channelName - The primary channel name.
+         * @param {string} subChannelName - The sub-channel name (optional).
+         * @returns {string} The unique key.
+         */
+        function getChannelKey(channelName, subChannelName) {
+            return subChannelName ? `${channelName}_${subChannelName}` : channelName;
+        }
+
+        /**
+         * Populates a channel dropdown (main or settings).
+         * @param {HTMLElement} selectElement - The select element to populate.
+         * @param {HTMLElement} primaryWrapElement - The wrapping div for the primary select (for layout).
+         * @param {HTMLElement} subGroupElement - The wrapping div for the sub-channel select.
+         * @param {HTMLElement} subSelectElement - The sub-channel select element.
+         * @param {boolean} isSettingsPanel - True if populating settings panel dropdowns.
+         * @param {string} initialPrimaryValue - Optional: value to set as selected after population.
+         * @param {string} initialSubValue - Optional: value to set as selected after population.
+         */
+        function populateChannelDropdowns(selectElement, primaryWrapElement, subGroupElement, subSelectElement, isSettingsPanel, initialPrimaryValue = '', initialSubValue = '') {
+            selectElement.innerHTML = ''; // Clear existing options
+
+            // Add a default "请选择" option if not in settings panel or if settings panel's first option is for calculation purposes
+            if (!isSettingsPanel) {
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = '请选择渠道';
+                selectElement.appendChild(defaultOption);
+            }
+
+            channelPricingData.forEach(data => {
+                const option = document.createElement('option');
+                option.value = data.channel;
+                option.textContent = data.channel;
+                selectElement.appendChild(option);
+            });
+
+            // Set initial selected value if provided
+            if (initialPrimaryValue) {
+                selectElement.value = initialPrimaryValue;
+            }
+
+            // Trigger change event to handle sub-channel population and layout
+            // Use setTimeout to ensure options are rendered before dispatching change
+            setTimeout(() => {
+                selectElement.dispatchEvent(new Event('change'));
+
+                // Set initial sub-channel value after it's populated
+                if (initialSubValue) {
+                    subSelectElement.value = initialSubValue;
+                }
+            }, 0);
+        }
+
+        /**
+         * Handles the change event for a primary channel select.
+         * @param {Event} event - The change event.
+         * @param {HTMLElement} primaryWrapElement - The wrapping div for the primary select.
+         * @param {HTMLElement} subGroupElement - The wrapping div for the sub-channel select.
+         * @param {HTMLElement} subSelectElement - The sub-channel select element.
+         * @param {boolean} isSettingsPanel - True if this is for the settings panel.
+         */
+        function handlePrimaryChannelChange(event, primaryWrapElement, subGroupElement, subSelectElement, isSettingsPanel) {
+            const selectedChannelName = event.target.value;
+            const selectedChannelData = channelPricingData.find(d => d.channel === selectedChannelName);
+
+            subSelectElement.innerHTML = ''; // Clear previous sub-channel options
+
+            if (selectedChannelData && selectedChannelData.subChannels) {
+                // If sub-channels exist, populate the sub-channel dropdown and show it with transition
+                selectedChannelData.subChannels.forEach(sub => {
+                    const option = document.createElement('option');
+                    option.value = sub.channel;
+                    option.textContent = sub.channel;
+                    subSelectElement.appendChild(option);
+                });
+
+                // Show sub-channel with transition
+                subGroupElement.classList.remove('opacity-0', 'max-h-0');
+                subGroupElement.classList.add('opacity-100', 'max-h-96');
+
+                // Adjust primary channel wrap to take 1 column when sub-channel is present
+                primaryWrapElement.classList.remove('sm:col-span-2');
+                primaryWrapElement.classList.add('sm:col-span-1');
+                subGroupElement.classList.add('sm:col-span-1');
+
+            } else {
+                // Hide sub-channel with transition
+                subGroupElement.classList.remove('opacity-100', 'max-h-96');
+                subGroupElement.classList.add('opacity-0', 'max-h-0');
+
+                // Adjust primary channel wrap to span 2 columns for centering
+                primaryWrapElement.classList.remove('sm:col-span-1');
+                primaryWrapElement.classList.add('sm:col-span-2');
+                subGroupElement.classList.remove('sm:col-span-1');
+            }
+
+            // If this is the settings panel, load the specific settings for the selected channel
+            if (isSettingsPanel) {
+                loadSettingsForChannel(selectedChannelName, subSelectElement.value);
+            }
+        }
+
+
+        /**
+         * Calculates and updates the FCL Cost and Cost per CBM display in the settings panel.
+         */
+        function updateCalculatedCostsDisplay() {
+            const seaFreightUSD = parseFloat(settingsInputElements.seaFreightUSD.value) || 0;
+            const customsClearanceUSD = parseFloat(settingsInputElements.customsClearanceUSD.value) || 0;
+            const dutyUSD = parseFloat(settingsInputElements.dutyUSD.value) || 0;
+            const pickupDevanningUSD = parseFloat(settingsInputElements.pickupDevanningUSD.value) || 0;
+            const exchangeRate = parseFloat(settingsInputElements.exchangeRate.value) || 0;
+            const seaMiscRMB = parseFloat(settingsInputElements.seaMiscRMB.value) || 0;
+            const truckingRMB = parseFloat(settingsInputElements.truckingRMB.value) || 0;
+
+            const calculatedFCLCost =
+                (seaFreightUSD + customsClearanceUSD + dutyUSD + pickupDevanningUSD) * exchangeRate +
+                seaMiscRMB +
+                truckingRMB;
+
+            settingsInputElements.fclCost.value = calculatedFCLCost.toFixed(2);
+
+            // Calculate "每方成本" based on "整柜成本 / 76"
+            const costPerCBM = calculatedFCLCost / 76;
+            settingsInputElements.costPerCBMAdditional.value = costPerCBM.toFixed(2);
+        }
+
+        /**
+         * Loads all channel settings and app password from localStorage at startup.
+         */
+        function loadAllSettingsFromLocalStorage() {
+            try {
+                const storedAllSettings = localStorage.getItem('allChannelSettings');
+                if (storedAllSettings) {
+                    allChannelSettings = JSON.parse(storedAllSettings);
+                }
+                const storedAppPassword = localStorage.getItem('appPassword');
+                if (storedAppPassword) {
+                    appPassword = storedAppPassword;
+                }
+            } catch (e) {
+                console.error("Error loading all settings from localStorage:", e);
+                // Continue with default empty settings
+            }
+        }
+
+        /**
+         * Saves all channel settings and app password to localStorage.
+         */
+        function saveAllSettingsToLocalStorage() {
+            try {
+                localStorage.setItem('allChannelSettings', JSON.stringify(allChannelSettings));
+                localStorage.setItem('appPassword', appPassword);
+            } catch (e) {
+                console.error("Error saving all settings to localStorage:", e);
+                showMessage("保存所有设置失败。", "error");
+            }
+        }
+
+
+        /**
+         * Loads settings for a specific channel into the settings panel input fields.
+         * @param {string} primaryChannelName - The primary channel name.
+         * @param {string} [subChannelName=''] - The sub-channel name.
+         */
+        function loadSettingsForChannel(primaryChannelName, subChannelName = '') {
+            const channelKey = getChannelKey(primaryChannelName, subChannelName);
+
+            // Get settings for the specific channel, or use defaults if not found
+            const currentChannelSettings = allChannelSettings[channelKey] || { ...defaultChannelSettings };
+
+            // Populate input fields with these settings
+            for (const key in settingsInputElements) {
+                if (settingsInputElements.hasOwnProperty(key) && currentChannelSettings.hasOwnProperty(key)) {
+                    // Only populate editable fields directly, calculated fields will be updated by updateCalculatedCostsDisplay
+                    if (key !== 'fclCost' && key !== 'costPerCBMAdditional') {
+                        settingsInputElements[key].value = currentChannelSettings[key].toFixed(2);
+                    }
+                }
+            }
+            updateCalculatedCostsDisplay(); // Update calculated FCL cost and Cost per CBM after loading
+        }
+
+        /**
+         * Saves settings from the settings panel input fields to a specific channel.
+         */
+        function saveSettingsForChannel() {
+            const primaryChannelName = settingsChannelSelect.value;
+            const subChannelName = settingsSubChannelSelect.value;
+            const channelKey = getChannelKey(primaryChannelName, subChannelName);
+
+            if (!primaryChannelName) {
+                showMessage("请选择一个渠道来保存设置。", "error");
+                return;
+            }
+
+            // Create or update the settings object for this channel
+            const currentChannelSettings = allChannelSettings[channelKey] || { ...defaultChannelSettings };
+
+            for (const key in settingsInputElements) {
+                // Save editable fields directly
+                if (settingsInputElements.hasOwnProperty(key) && key !== 'fclCost' && key !== 'costPerCBMAdditional') {
+                    currentChannelSettings[key] = parseFloat(settingsInputElements[key].value) || 0;
+                }
+            }
+            // Ensure fclCost and costPerCBMAdditional are also updated in the stored settings based on the calculation
+            currentChannelSettings.fclCost = parseFloat(settingsInputElements.fclCost.value) || 0;
+            currentChannelSettings.costPerCBMAdditional = parseFloat(settingsInputElements.costPerCBMAdditional.value) || 0;
+
+
+            allChannelSettings[channelKey] = currentChannelSettings;
+
+            saveAllSettingsToLocalStorage(); // Save all settings including the updated channel
+            showMessage(`渠道 "${channelKey}" 的设置已保存！`, "success");
+        }
+
+        /**
+         * Handles the password change logic.
+         */
+        function changePassword() {
+            const oldPass = oldPasswordInput.value;
+            const newPass = newPasswordInput.value;
+
+            if (oldPass === appPassword) {
+                if (newPass && newPass.length >= 1) { // Basic validation for new password
+                    appPassword = newPass;
+                    saveAllSettingsToLocalStorage(); // Save the updated password
+                    showMessage("密码修改成功！", "success");
+                    oldPasswordInput.value = '';
+                    newPasswordInput.value = '';
+                } else {
+                    showMessage("新密码不能为空。", "error");
+                }
+            } else {
+                showMessage("旧密码不正确。", "error");
+            }
+        }
+
+        // Define the specific handlers for settings panel channels
+        // These are defined here so they can be explicitly added/removed
+        function settingsPrimaryChannelChangeHandler(event) {
+            handlePrimaryChannelChange(event, settingsPrimaryChannelWrap, settingsSubChannelGroup, settingsSubChannelSelect, true);
+        }
+
+        function settingsSubChannelChangeHandler() {
+            loadSettingsForChannel(settingsChannelSelect.value, settingsSubChannelSelect.value);
+        }
+
+        // --- Import/Export Functions ---
+
+        /**
+         * Exports all current channel settings to an encrypted JSON file.
+         */
+        async function exportSettings() { // Renamed function
+            if (!appPassword || appPassword.length === 0) {
+                showMessage("请先在设置面板中设置一个访问密码才能导出配置。", "error");
+                return;
+            }
+
+            try {
+                const dataToEncrypt = JSON.stringify(allChannelSettings);
+                const encryptedBundle = await encryptData(dataToEncrypt, appPassword);
+
+                const blob = new Blob([JSON.stringify(encryptedBundle)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'price_calculator_settings.json'; // Simplified file name
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showMessage("配置已导出成功！", "success");
+            } catch (e) {
+                console.error("导出配置失败:", e);
+                showMessage("导出配置失败。请检查密码或重试。", "error");
+            }
+        }
+
+        /**
+         * Imports and decrypts settings from a JSON file.
+         */
+        async function importSettings() { // Renamed function
+            if (!appPassword || appPassword.length === 0) {
+                showMessage("请先在设置面板中设置一个访问密码才能导入配置。", "error");
+                return;
+            }
+
+            importFileInput.click(); // Trigger file input click
+        }
+
+        // Handle file selection for import
+        importFileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const encryptedBundle = JSON.parse(e.target.result);
+                    const decryptedData = await decryptData(encryptedBundle, appPassword);
+                    const importedSettings = JSON.parse(decryptedData);
+
+                    allChannelSettings = importedSettings; // Overwrite current settings
+                    saveAllSettingsToLocalStorage(); // Save to localStorage
+
+                    showMessage("配置已成功导入！", "success");
+                    // Refresh settings panel UI with imported data
+                    // Re-populate main calculator dropdowns after import to ensure current selection is valid
+                    populateChannelDropdowns(mainChannelSelect, mainPrimaryChannelWrap, mainSubChannelGroup, mainSubChannelSelect, false, mainChannelSelect.value, mainSubChannelSelect.value);
+
+                } catch (e) {
+                    console.error("导入配置失败:", e);
+                    showMessage("导入配置失败。请确保文件未损坏且密码正确。", "error");
+                } finally {
+                    importFileInput.value = ''; // Clear the file input
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAllSettingsFromLocalStorage(); // Load all channel settings and app password first
+
+            // Populate main calculator channel dropdowns
+            populateChannelDropdowns(mainChannelSelect, mainPrimaryChannelWrap, mainSubChannelGroup, mainSubChannelSelect, false);
+
+            // Add event listener for main channel selection
+            mainChannelSelect.addEventListener('change', (event) => {
+                handlePrimaryChannelChange(event, mainPrimaryChannelWrap, mainSubChannelGroup, mainSubChannelSelect, false);
+            });
+            mainSubChannelSelect.addEventListener('change', () => {
+                // If sub-channel changes, nothing specific to do for layout, but logic might re-evaluate in calculation.
+            });
+
+            // Add event listeners for settings panel editable variable inputs to update calculated costs
+            const editableSettingsKeys = ['seaFreightUSD', 'seaMiscRMB', 'truckingRMB', 'customsClearanceUSD', 'dutyUSD', 'pickupDevanningUSD', 'exchangeRate'];
+            editableSettingsKeys.forEach(key => {
+                settingsInputElements[key].addEventListener('input', updateCalculatedCostsDisplay);
+            });
+        });
+
+        // --- Event Listeners ---
+
+        // Calculate button click event for main calculator
+        calculateButton.addEventListener('click', () => {
+            const selectedPrimaryChannelName = mainChannelSelect.value;
+            const selectedSubChannelName = mainSubChannelSelect.value;
+            const volume = parseFloat(volumeInput.value);
+            const actualWeight = parseFloat(chargeableWeightInput.value); // Changed variable name for clarity
+
+            // Input validation
+            if (!selectedPrimaryChannelName) {
+                showMessage("请选择一个渠道。", "error");
+                return;
+            }
+            if (isNaN(volume) || volume <= 0) {
+                showMessage("请输入有效的方量。", "error");
+                return;
+            }
+            if (isNaN(actualWeight) || actualWeight <= 0) { // Check actualWeight (formerly chargeableWeight)
+                showMessage("请输入有效的重量。", "error");
+                return;
+            }
+
+            const channelKey = getChannelKey(selectedPrimaryChannelName, selectedSubChannelName);
+            const currentChannelSettings = allChannelSettings[channelKey] || { ...defaultChannelSettings };
+
+            // Validation for costPerCBMAdditional
+            if (currentChannelSettings.costPerCBMAdditional === 0 || isNaN(currentChannelSettings.costPerCBMAdditional)) {
+                showMessage("请先导入配置数据。", "error");
+                return;
+            }
+
+            // New calculation logic: 方量 * 166.66666，然后与实际重量对比，取大值作为计费重
+            const volumeWeightCalculation = volume * 166.66666;
+            const effectiveChargeableWeight = Math.max(volumeWeightCalculation, actualWeight);
+
+            // Final price calculation: 当前渠道的每方成本 * 方数 / 实际计费重
+            if (effectiveChargeableWeight === 0) {
+                 showMessage("计费重不能为0。", "error");
+                 return;
+            }
+            let totalCost = (currentChannelSettings.costPerCBMAdditional * volume) / effectiveChargeableWeight;
+
+            // Display final price
+            resultDisplay.textContent = `前端价格(未包含末端派送)价格: ${totalCost.toFixed(2)} RMB`;
+        });
+
+        // Access settings button click event
+        accessSettingsButton.addEventListener('click', () => {
+            if (settingsAccessPasswordInput.value === appPassword) {
+                priceCalculatorDiv.classList.add('hidden');
+                settingsPanelDiv.classList.remove('hidden');
+                settingsAccessPasswordInput.value = ''; // Clear password input field
+
+                // Populate settings panel channel dropdowns
+                populateChannelDropdowns(settingsChannelSelect, settingsPrimaryChannelWrap, settingsSubChannelGroup, settingsSubChannelSelect, true, mainChannelSelect.value, mainSubChannelSelect.value);
+
+                // Add event listener for settings channel selection
+                // Use the named function for removal later
+                settingsChannelSelect.addEventListener('change', settingsPrimaryChannelChangeHandler);
+                settingsSubChannelSelect.addEventListener('change', settingsSubChannelChangeHandler);
+
+            } else {
+                showMessage("密码错误！", "error");
+            }
+        });
+
+        // Save settings button click event
+        saveSettingsButton.addEventListener('click', saveSettingsForChannel);
+        
+        // Back to calculator button click event
+        backToCalculatorButton.addEventListener('click', () => {
+            settingsPanelDiv.classList.add('hidden');
+            priceCalculatorDiv.classList.remove('hidden');
+            // Remove settings panel specific event listeners using the named functions
+            settingsChannelSelect.removeEventListener('change', settingsPrimaryChannelChangeHandler);
+            settingsSubChannelSelect.removeEventListener('change', settingsSubChannelChangeHandler);
+
+            // Also remove listeners for editable fields to prevent memory leaks
+            const editableSettingsKeys = ['seaFreightUSD', 'seaMiscRMB', 'truckingRMB', 'customsClearanceUSD', 'dutyUSD', 'pickupDevanningUSD', 'exchangeRate'];
+            editableSettingsKeys.forEach(key => {
+                settingsInputElements[key].removeEventListener('input', updateCalculatedCostsDisplay);
+            });
+        });
+
+        // Change password button click event
+        changePasswordButton.addEventListener('click', changePassword);
+
+        // Event listeners for the newly positioned import/export buttons
+        importSettingsButton.addEventListener('click', importSettings);
+        exportSettingsButton.addEventListener('click', exportSettings);
+    </script>
+</body>
 </html>
